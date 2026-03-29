@@ -9,6 +9,8 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**[Live Demo](https://mcp-devbridge.vercel.app)** | **[Deploy Backend to Render](https://render.com/deploy?repo=https://github.com/MusaevAkobirSanokulUgli/MCP-DevBridge)**
+
 A production-grade platform implementing the **Model Context Protocol (MCP)** — a standardized JSON-RPC 2.0 protocol for AI assistants and LLMs to interact with developer tools like GitHub, databases, and file systems through a unified gateway.
 
 ---
