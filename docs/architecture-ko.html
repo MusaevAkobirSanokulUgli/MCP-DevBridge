@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP DevBridge - 아키텍처 문서</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.7; }
+        a { color: #3b82f6; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .hero {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1e1b4b 40%, #0f172a 100%);
+            padding: 80px 40px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.18) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(59,130,246,0.15);
+            border: 1px solid rgba(59,130,246,0.4);
+            color: #93c5fd;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            animation: shimmer 4s ease-in-out infinite;
+        }
+        @keyframes shimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.2); } }
+        .hero-tagline { font-size: 1.15rem; color: #94a3b8; max-width: 720px; margin: 0 auto 32px; }
+        .lang-badge {
+            display: inline-block;
+            background: #ef4444;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 32px;
+        }
+        .stats-row { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-top: 8px; }
+        .stat-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 24px; min-width: 110px; }
+        .stat-num { font-size: 1.6rem; font-weight: 800; color: #60a5fa; }
+        .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+        .section { padding: 56px 0; }
+        .section-title {
+            font-size: 1.7rem; font-weight: 700; color: #f1f5f9; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-title::after {
+            content: ''; flex: 1; height: 2px;
+            background: linear-gradient(90deg, rgba(59,130,246,0.5), transparent);
+            border-radius: 2px; margin-left: 12px;
+        }
+        .section-subtitle { color: #64748b; margin-bottom: 32px; font-size: 0.97rem; }
+
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 28px; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; }
+        .card:hover { border-color: #3b82f6; box-shadow: 0 0 24px rgba(59,130,246,0.12); transform: translateY(-2px); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } .hero h1 { font-size: 2rem; } .stats-row { gap: 16px; } }
+
+        .arch-diagram { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 40px 24px; margin: 24px 0; }
+        .arch-layer { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+        .arch-box { background: #1e293b; border: 2px solid #334155; border-radius: 12px; padding: 14px 22px; text-align: center; min-width: 160px; transition: all 0.2s; }
+        .arch-box:hover { box-shadow: 0 0 16px rgba(59,130,246,0.2); }
+        .arch-box.blue { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+        .arch-box.purple { border-color: #8b5cf6; background: rgba(139,92,246,0.08); }
+        .arch-box.green { border-color: #10b981; background: rgba(16,185,129,0.08); }
+        .arch-box.orange { border-color: #f59e0b; background: rgba(245,158,11,0.08); }
+        .arch-box-title { font-weight: 700; font-size: 0.9rem; color: #f1f5f9; }
+        .arch-box-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 3px; }
+        .arch-arrow { text-align: center; color: #475569; font-size: 1.4rem; margin: 4px 0; }
+        .arch-label { text-align: center; font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 8px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        thead th { background: #1e293b; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 12px 16px; text-align: left; border-bottom: 2px solid #334155; }
+        tbody td { padding: 12px 16px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; color: #cbd5e1; vertical-align: top; }
+        tbody tr:hover { background: rgba(59,130,246,0.05); }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+        .badge-orange { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+        .code-block { background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 20px 24px; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem; color: #e2e8f0; overflow-x: auto; margin: 12px 0; line-height: 1.7; }
+        .code-block .comment { color: #475569; }
+        .code-block .cmd { color: #34d399; }
+        .code-block .str { color: #fbbf24; }
+
+        .feature-item { display: flex; gap: 16px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid #1e293b; }
+        .feature-item:last-child { border-bottom: none; }
+        .feature-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+        .feature-title { font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+        .feature-desc { font-size: 0.9rem; color: #94a3b8; }
+
+        .problem-list { list-style: none; margin-top: 16px; }
+        .problem-list li { padding: 12px 0; border-bottom: 1px solid #1e293b; color: #94a3b8; display: flex; align-items: flex-start; gap: 10px; font-size: 0.95rem; }
+        .problem-list li::before { content: '⚠'; font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+        .security-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 600px) { .security-grid { grid-template-columns: 1fr; } }
+        .security-card { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 16px 18px; }
+        .security-card h4 { color: #34d399; font-size: 0.9rem; margin-bottom: 6px; }
+        .security-card p { color: #94a3b8; font-size: 0.85rem; }
+
+        footer { background: #020617; border-top: 1px solid #1e293b; padding: 32px 40px; text-align: center; color: #475569; font-size: 0.85rem; }
+        footer span { color: #3b82f6; }
+        hr { border: none; border-top: 1px solid #1e293b; margin: 0; }
+    </style>
+</head>
+<body>
+
+<!-- 히어로 섹션 -->
+<section class="hero">
+    <div class="hero-badge">프로젝트 1 &nbsp;·&nbsp; 개발자 도구</div>
+    <h1>MCP DevBridge</h1>
+    <p class="hero-tagline">JSON-RPC 2.0과 Model Context Protocol(MCP)을 구현한 범용 개발자 도구 통합 플랫폼 — AI 어시스턴트를 GitHub, 데이터베이스, 파일 시스템에 연결합니다.</p>
+    <div><span class="lang-badge">🇰🇷 한국어</span></div>
+    <div class="stats-row">
+        <div class="stat-item"><div class="stat-num">55</div><div class="stat-label">파일</div></div>
+        <div class="stat-item"><div class="stat-num">8,079</div><div class="stat-label">코드 라인</div></div>
+        <div class="stat-item"><div class="stat-num">13</div><div class="stat-label">MCP 도구</div></div>
+        <div class="stat-item"><div class="stat-num">15</div><div class="stat-label">API 엔드포인트</div></div>
+        <div class="stat-item"><div class="stat-num">5</div><div class="stat-label">Docker 서비스</div></div>
+    </div>
+</section>
+
+<hr>
+
+<div class="container">
+
+    <!-- 문제 정의 -->
+    <section class="section">
+        <h2 class="section-title">🎯 문제 정의</h2>
+        <p class="section-subtitle">MCP DevBridge가 해결하기 위해 만들어진 문제들</p>
+        <div class="card">
+            <p style="color:#94a3b8; margin-bottom:16px;">현대 AI 개발 워크플로우는 파편화 문제를 겪고 있습니다. GitHub, 데이터베이스, 파일 시스템 등 각 도구가 고유한 API, 인증 메커니즘, 데이터 형식을 가지고 있어 개발자들이 기능 개발 대신 연결 코드를 작성하는 데 시간을 낭비합니다.</p>
+            <ul class="problem-list">
+                <li>AI 도구가 개발자 리소스와 상호작용하기 위한 통합 프로토콜이 없어 모든 통합이 맞춤 코드를 필요로 합니다.</li>
+                <li>실시간 관찰 가능성 부재: 개발자가 여러 통합에 걸친 도구 호출, 지연 시간, 오류를 한 곳에서 모니터링할 수 없습니다.</li>
+                <li>중앙화된 감사 로깅 없이 AI 어시스턴트가 민감한 저장소나 데이터베이스에 접근할 때의 보안 취약점.</li>
+                <li>로컬 개발의 어려움: GitHub, 데이터베이스, 파일 시스템을 위한 개별 목업 서버를 구동하는 것은 시간이 많이 소요됩니다.</li>
+                <li>AI 모델에 새 도구를 노출하는 표준화된 방법이 없어 각 모델 벤더마다 다른 함수 호출 형식을 사용합니다.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- 아키텍처 -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🏗 아키텍처</h2>
+        <p class="section-subtitle">Model Context Protocol과 JSON-RPC 2.0 기반의 4계층 아키텍처</p>
+        <div class="arch-diagram">
+            <div class="arch-label">클라이언트 계층</div>
+            <div class="arch-layer">
+                <div class="arch-box blue">
+                    <div class="arch-box-title">Next.js 14 대시보드</div>
+                    <div class="arch-box-sub">포트 3000 · React UI</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ HTTP / WebSocket (SignalR)</div>
+            <div class="arch-label">게이트웨이 계층</div>
+            <div class="arch-layer">
+                <div class="arch-box purple">
+                    <div class="arch-box-title">.NET 8 API Gateway</div>
+                    <div class="arch-box-sub">포트 5000 · 라우팅 & 감사</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ JSON-RPC 2.0 over HTTP</div>
+            <div class="arch-label">MCP 서버 계층</div>
+            <div class="arch-layer">
+                <div class="arch-box green">
+                    <div class="arch-box-title">GitHub MCP Server</div>
+                    <div class="arch-box-sub">포트 3001 · 5개 도구</div>
+                </div>
+                <div class="arch-box green">
+                    <div class="arch-box-title">Database MCP Server</div>
+                    <div class="arch-box-sub">포트 3002 · 4개 도구</div>
+                </div>
+                <div class="arch-box green">
+                    <div class="arch-box-title">FileSystem MCP Server</div>
+                    <div class="arch-box-sub">포트 3003 · 4개 도구</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ 데이터 영속화</div>
+            <div class="arch-label">영속화 계층</div>
+            <div class="arch-layer">
+                <div class="arch-box orange">
+                    <div class="arch-box-title">SQLite (EF Core)</div>
+                    <div class="arch-box-sub">감사 로그 & 설정</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 기술 스택 -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🛠 기술 스택</h2>
+        <p class="section-subtitle">전체 스택에 걸친 프로덕션 수준의 기술들</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+                <thead>
+                    <tr><th>계층</th><th>기술</th><th>버전</th><th>목적</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="badge badge-blue">프론트엔드</span></td><td>Next.js</td><td>14</td><td>App Router를 사용한 대시보드 UI</td></tr>
+                    <tr><td><span class="badge badge-blue">프론트엔드</span></td><td>TypeScript</td><td>5.x</td><td>타입 안전한 클라이언트 코드</td></tr>
+                    <tr><td><span class="badge badge-blue">프론트엔드</span></td><td>Tailwind CSS</td><td>3.x</td><td>유틸리티 퍼스트 스타일링</td></tr>
+                    <tr><td><span class="badge badge-purple">백엔드</span></td><td>.NET</td><td>8.0</td><td>API Gateway 및 비즈니스 로직</td></tr>
+                    <tr><td><span class="badge badge-purple">백엔드</span></td><td>Entity Framework Core</td><td>8.x</td><td>SQLite 영속화를 위한 ORM</td></tr>
+                    <tr><td><span class="badge badge-purple">백엔드</span></td><td>SignalR</td><td>8.x</td><td>실시간 WebSocket 허브</td></tr>
+                    <tr><td><span class="badge badge-green">MCP</span></td><td>JSON-RPC 2.0</td><td>2.0</td><td>도구 호출을 위한 프로토콜</td></tr>
+                    <tr><td><span class="badge badge-green">MCP</span></td><td>Model Context Protocol</td><td>1.x</td><td>표준화된 도구 정의</td></tr>
+                    <tr><td><span class="badge badge-orange">인프라</span></td><td>Docker &amp; Compose</td><td>24+</td><td>5개 서비스 컨테이너 설정</td></tr>
+                    <tr><td><span class="badge badge-orange">인프라</span></td><td>SQLite</td><td>3.x</td><td>내장 감사 및 설정 저장소</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 주요 기능 -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">✨ 주요 기능</h2>
+        <p class="section-subtitle">AI 도구를 개발자 환경에 통합하는 데 필요한 모든 것</p>
+        <div class="grid-2">
+            <div class="card">
+                <div class="feature-item">
+                    <span class="feature-icon">📡</span>
+                    <div><div class="feature-title">실시간 대시보드</div><div class="feature-desc">SignalR WebSocket을 통한 라이브 도구 호출 모니터링. 세 개의 MCP 서버 전체에서 호출, 지연 시간, 오류를 단일 통합 뷰로 확인합니다.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🐙</span>
+                    <div><div class="feature-title">GitHub MCP Server</div><div class="feature-desc">도구: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_repos</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">get_repo</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">create_issue</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_issues</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">get_pull_requests</code>.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🗄</span>
+                    <div><div class="feature-title">Database MCP Server</div><div class="feature-desc">도구: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_tables</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">describe_schema</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">query_table</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">execute_query</code>. 안전한 읽기/쓰기 분리.</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="feature-item">
+                    <span class="feature-icon">📁</span>
+                    <div><div class="feature-title">FileSystem MCP Server</div><div class="feature-desc">도구: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_files</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">read_file</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">write_file</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">search_files</code>. 샌드박스 디렉터리 접근.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📋</span>
+                    <div><div class="feature-title">API Gateway &amp; 감사 로깅</div><div class="feature-desc">모든 도구 호출이 타임스탬프, 메서드, 파라미터, 응답 시간, 상태와 함께 기록됩니다. EF Core를 통해 SQLite에 전체 감사 추적이 저장됩니다.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💓</span>
+                    <div><div class="feature-title">백그라운드 헬스 체크</div><div class="feature-desc">호스티드 서비스가 30초마다 세 MCP 서버를 핑합니다. 상태 변화는 SignalR을 통해 연결된 대시보드 클라이언트로 브로드캐스트됩니다.</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API 엔드포인트 -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🔌 API 엔드포인트</h2>
+        <p class="section-subtitle">.NET 8 API Gateway가 노출하는 15개의 REST 엔드포인트</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+                <thead>
+                    <tr><th>메서드</th><th>엔드포인트</th><th>설명</th><th>서버</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/mcp/servers</td><td>등록된 모든 MCP 서버와 상태 목록</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/mcp/tools</td><td>모든 서버의 도구 집계</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/mcp/call</td><td>도구 호출 실행 (JSON-RPC 프록시)</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/audit/logs</td><td>필터가 있는 페이지네이션된 감사 로그</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/audit/stats</td><td>집계된 호출 통계</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/github/repos</td><td>저장소 목록 (GitHub MCP 경유)</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/github/issues</td><td>새 GitHub 이슈 생성</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/github/pulls/:repo</td><td>저장소의 풀 리퀘스트 목록</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/db/tables</td><td>모든 데이터베이스 테이블 목록</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/db/schema/:table</td><td>테이블 스키마 설명</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/db/query</td><td>읽기 쿼리 실행</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/fs/list</td><td>디렉터리 내용 목록</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/fs/read</td><td>파일 내용 읽기</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/fs/write</td><td>파일 쓰기 또는 업데이트</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/fs/search</td><td>파일 전체 텍스트 검색</td><td>FileSystem</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 빠른 시작 -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🚀 빠른 시작</h2>
+        <p class="section-subtitle">5분 이내에 MCP DevBridge를 로컬에서 실행하기</p>
+        <div class="card">
+            <p style="color:#94a3b8; margin-bottom:12px;"><strong style="color:#f1f5f9;">1단계:</strong> 저장소 복제</p>
+            <div class="code-block">
+<span class="cmd">git clone</span> https://github.com/your-org/mcp-devbridge.git
+<span class="cmd">cd</span> mcp-devbridge
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">2단계:</strong> 환경 변수 설정</p>
+            <div class="code-block">
+<span class="cmd">cp</span> .env.example .env
+<span class="comment"># .env를 편집하여 GitHub 토큰을 설정하세요:</span>
+<span class="str">GITHUB_TOKEN</span>=ghp_your_personal_access_token
+<span class="str">DB_CONNECTION</span>=Data Source=devbridge.db
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">3단계:</strong> Docker Compose로 모든 서비스 시작</p>
+            <div class="code-block">
+<span class="cmd">docker compose up</span> --build -d
+<span class="comment"># 서비스 시작 중:</span>
+<span class="comment">#  ✓ dashboard        → http://localhost:3000</span>
+<span class="comment">#  ✓ api-gateway      → http://localhost:5000</span>
+<span class="comment">#  ✓ mcp-github       → http://localhost:3001</span>
+<span class="comment">#  ✓ mcp-database     → http://localhost:3002</span>
+<span class="comment">#  ✓ mcp-filesystem   → http://localhost:3003</span>
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">4단계:</strong> 도구 호출 테스트</p>
+            <div class="code-block">
+<span class="cmd">curl</span> -X POST http://localhost:5000/api/mcp/call \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"server":"github","tool":"list_repos","params":{}}'</span>
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">5단계:</strong> <a href="http://localhost:3000">http://localhost:3000</a>에서 대시보드 열기</p>
+        </div>
+    </section>
+
+    <!-- 보안 고려사항 -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🔒 보안 고려사항</h2>
+        <p class="section-subtitle">프로덕션 배포를 위한 내장 보호 장치</p>
+        <div class="security-grid">
+            <div class="security-card">
+                <h4>🔑 토큰 관리</h4>
+                <p>GitHub 토큰은 환경 변수에만 저장되며, 소스 코드나 데이터베이스에는 절대 저장되지 않습니다. API 응답에서 토큰이 반환되지 않습니다.</p>
+            </div>
+            <div class="security-card">
+                <h4>📋 감사 로깅</h4>
+                <p>모든 도구 호출이 호출자 ID, 파라미터, 응답 시간, HTTP 상태와 함께 저장됩니다. 로그는 한번 작성되면 변경할 수 없습니다.</p>
+            </div>
+            <div class="security-card">
+                <h4>🗂 파일 시스템 샌드박싱</h4>
+                <p>FileSystem MCP 서버는 설정 가능한 루트 디렉터리 내에서만 작동합니다. 경로 순회 시도(../)는 유효성 검사 계층에서 차단됩니다.</p>
+            </div>
+            <div class="security-card">
+                <h4>🛡 쿼리 안전성</h4>
+                <p>데이터베이스 도구는 읽기 쿼리와 쓰기 쿼리를 분리합니다. DDL 문(DROP, CREATE)은 기본적으로 query_table 도구에서 차단됩니다.</p>
+            </div>
+            <div class="security-card">
+                <h4>🏥 헬스 모니터링</h4>
+                <p>백그라운드 헬스 체크가 30초 내에 서버 장애를 감지합니다. 비정상 서버는 회복될 때까지 라우팅에서 제외됩니다.</p>
+            </div>
+            <div class="security-card">
+                <h4>🐳 네트워크 격리</h4>
+                <p>Docker Compose는 모든 서비스를 내부 네트워크에 배치합니다. 대시보드(3000)와 게이트웨이(5000)만 호스트에 노출됩니다.</p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<footer>
+    <p>MCP DevBridge &nbsp;·&nbsp; AI/ML 포트폴리오 &nbsp;·&nbsp; <span>.NET 8</span>, <span>Next.js 14</span>, <span>Model Context Protocol</span>로 구축됨</p>
+    <p style="margin-top:8px; color:#334155;">포트폴리오 시연을 위해 생성된 문서입니다.</p>
+</footer>
+
+</body>
+</html>

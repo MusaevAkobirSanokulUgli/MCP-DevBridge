@@ -1,0 +1,40 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+.next/
+dist/
+.turbo/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Docker volumes
+data/
+
+# Logs
+*.log
+
+# Claude
+.claude/

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP DevBridge - Arxitektura Hujjati</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+        a { color: #3b82f6; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .hero {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1e1b4b 40%, #0f172a 100%);
+            padding: 80px 40px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.18) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(59,130,246,0.15);
+            border: 1px solid rgba(59,130,246,0.4);
+            color: #93c5fd;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            animation: shimmer 4s ease-in-out infinite;
+        }
+        @keyframes shimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.2); } }
+        .hero-tagline { font-size: 1.2rem; color: #94a3b8; max-width: 700px; margin: 0 auto 32px; }
+        .lang-badge {
+            display: inline-block;
+            background: #10b981;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 32px;
+        }
+        .stats-row { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-top: 8px; }
+        .stat-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 24px; min-width: 110px; }
+        .stat-num { font-size: 1.6rem; font-weight: 800; color: #60a5fa; }
+        .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+        .section { padding: 56px 0; }
+        .section-title {
+            font-size: 1.7rem; font-weight: 700; color: #f1f5f9; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-title::after {
+            content: ''; flex: 1; height: 2px;
+            background: linear-gradient(90deg, rgba(59,130,246,0.5), transparent);
+            border-radius: 2px; margin-left: 12px;
+        }
+        .section-subtitle { color: #64748b; margin-bottom: 32px; font-size: 0.97rem; }
+
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 28px; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; }
+        .card:hover { border-color: #3b82f6; box-shadow: 0 0 24px rgba(59,130,246,0.12); transform: translateY(-2px); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } .hero h1 { font-size: 2rem; } .stats-row { gap: 16px; } }
+
+        .arch-diagram { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 40px 24px; margin: 24px 0; }
+        .arch-layer { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+        .arch-box { background: #1e293b; border: 2px solid #334155; border-radius: 12px; padding: 14px 22px; text-align: center; min-width: 160px; transition: all 0.2s; }
+        .arch-box:hover { box-shadow: 0 0 16px rgba(59,130,246,0.2); }
+        .arch-box.blue { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+        .arch-box.purple { border-color: #8b5cf6; background: rgba(139,92,246,0.08); }
+        .arch-box.green { border-color: #10b981; background: rgba(16,185,129,0.08); }
+        .arch-box.orange { border-color: #f59e0b; background: rgba(245,158,11,0.08); }
+        .arch-box-title { font-weight: 700; font-size: 0.9rem; color: #f1f5f9; }
+        .arch-box-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 3px; }
+        .arch-arrow { text-align: center; color: #475569; font-size: 1.4rem; margin: 4px 0; }
+        .arch-label { text-align: center; font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 8px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        thead th { background: #1e293b; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 12px 16px; text-align: left; border-bottom: 2px solid #334155; }
+        tbody td { padding: 12px 16px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; color: #cbd5e1; vertical-align: top; }
+        tbody tr:hover { background: rgba(59,130,246,0.05); }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+        .badge-orange { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+        .code-block { background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 20px 24px; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem; color: #e2e8f0; overflow-x: auto; margin: 12px 0; line-height: 1.7; }
+        .code-block .comment { color: #475569; }
+        .code-block .cmd { color: #34d399; }
+        .code-block .str { color: #fbbf24; }
+
+        .feature-item { display: flex; gap: 16px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid #1e293b; }
+        .feature-item:last-child { border-bottom: none; }
+        .feature-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+        .feature-title { font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+        .feature-desc { font-size: 0.9rem; color: #94a3b8; }
+
+        .problem-list { list-style: none; margin-top: 16px; }
+        .problem-list li { padding: 12px 0; border-bottom: 1px solid #1e293b; color: #94a3b8; display: flex; align-items: flex-start; gap: 10px; font-size: 0.95rem; }
+        .problem-list li::before { content: '⚠'; font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+        .security-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 600px) { .security-grid { grid-template-columns: 1fr; } }
+        .security-card { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 16px 18px; }
+        .security-card h4 { color: #34d399; font-size: 0.9rem; margin-bottom: 6px; }
+        .security-card p { color: #94a3b8; font-size: 0.85rem; }
+
+        footer { background: #020617; border-top: 1px solid #1e293b; padding: 32px 40px; text-align: center; color: #475569; font-size: 0.85rem; }
+        footer span { color: #3b82f6; }
+        hr { border: none; border-top: 1px solid #1e293b; margin: 0; }
+    </style>
+</head>
+<body>
+
+<!-- QAHRAMON QISM -->
+<section class="hero">
+    <div class="hero-badge">Loyiha 1 &nbsp;·&nbsp; Dasturchi Vositalari</div>
+    <h1>MCP DevBridge</h1>
+    <p class="hero-tagline">JSON-RPC 2.0 va Model Context Protocol (MCP) asosida qurilgan universal dasturchi vositalarini integratsiya qilish platformasi — AI yordamchilarini GitHub, ma'lumotlar bazalari va fayl tizimlariga ulaydi.</p>
+    <div><span class="lang-badge">🇺🇿 O'zbek tili</span></div>
+    <div class="stats-row">
+        <div class="stat-item"><div class="stat-num">55</div><div class="stat-label">Fayl</div></div>
+        <div class="stat-item"><div class="stat-num">8,079</div><div class="stat-label">Kod satrlari</div></div>
+        <div class="stat-item"><div class="stat-num">13</div><div class="stat-label">MCP vositalar</div></div>
+        <div class="stat-item"><div class="stat-num">15</div><div class="stat-label">API endpointlar</div></div>
+        <div class="stat-item"><div class="stat-num">5</div><div class="stat-label">Docker xizmatlari</div></div>
+    </div>
+</section>
+
+<hr>
+
+<div class="container">
+
+    <!-- MUAMMO BAYONI -->
+    <section class="section">
+        <h2 class="section-title">🎯 Muammo bayoni</h2>
+        <p class="section-subtitle">MCP DevBridge hal qilishga yaratilgan muammolar</p>
+        <div class="card">
+            <p style="color:#94a3b8; margin-bottom:16px;">Zamonaviy AI dasturlash ish oqimlarida tarqoqlik muammosi mavjud: har bir vosita (GitHub, ma'lumotlar bazalari, fayl tizimlari) o'ziga xos API, autentifikatsiya mexanizmi va ma'lumotlar formatiga ega. Dasturchilar xususiyatlar yaratish o'rniga "yopishqoq" kod yozishga vaqt sarflaydi.</p>
+            <ul class="problem-list">
+                <li>AI vositalar uchun dasturchi resurslari bilan ishlashning yagona protokoli yo'q — har bir integratsiya maxsus kod talab qiladi.</li>
+                <li>Real vaqt kuzatuvining yo'qligi: dasturchilar bir joyda bir nechta integratsiya bo'yicha vosita chaqiruvlarini, kechikishni yoki xatolarni kuzata olmaydi.</li>
+                <li>Markazlashgan audit jurnali bo'lmagan holda AI yordamchilar sezgir repozitoriy yoki ma'lumotlar bazalariga kirishidagi xavfsizlik bo'shliqlari.</li>
+                <li>Mahalliy ishlab chiqish qiyinligi: GitHub, ma'lumotlar bazalari va fayl tizimlari uchun alohida mock serverlarni ishga tushirish vaqt talab qiladi.</li>
+                <li>AI modellariga yangi vositalarni ochishning standartlashtirilgan usuli yo'q — har bir model sotuvchisi o'zining funksiya chaqiruv formatiga ega.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- ARXITEKTURA -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🏗 Arxitektura</h2>
+        <p class="section-subtitle">Model Context Protocol va JSON-RPC 2.0 asosida qurilgan to'rt qatlamli arxitektura</p>
+        <div class="arch-diagram">
+            <div class="arch-label">Mijoz qatlami</div>
+            <div class="arch-layer">
+                <div class="arch-box blue">
+                    <div class="arch-box-title">Next.js 14 Dashboard</div>
+                    <div class="arch-box-sub">Port 3000 · React UI</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ HTTP / WebSocket (SignalR)</div>
+            <div class="arch-label">Gateway qatlami</div>
+            <div class="arch-layer">
+                <div class="arch-box purple">
+                    <div class="arch-box-title">.NET 8 API Gateway</div>
+                    <div class="arch-box-sub">Port 5000 · Marshrutlash va audit</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ JSON-RPC 2.0 over HTTP</div>
+            <div class="arch-label">MCP Server qatlami</div>
+            <div class="arch-layer">
+                <div class="arch-box green">
+                    <div class="arch-box-title">GitHub MCP Server</div>
+                    <div class="arch-box-sub">Port 3001 · 5 vosita</div>
+                </div>
+                <div class="arch-box green">
+                    <div class="arch-box-title">Database MCP Server</div>
+                    <div class="arch-box-sub">Port 3002 · 4 vosita</div>
+                </div>
+                <div class="arch-box green">
+                    <div class="arch-box-title">FileSystem MCP Server</div>
+                    <div class="arch-box-sub">Port 3003 · 4 vosita</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ Ma'lumotlarni saqlash</div>
+            <div class="arch-label">Saqlash qatlami</div>
+            <div class="arch-layer">
+                <div class="arch-box orange">
+                    <div class="arch-box-title">SQLite (EF Core)</div>
+                    <div class="arch-box-sub">Audit jurnali va sozlama</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TEXNOLOGIYA STEKI -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🛠 Texnologiya steki</h2>
+        <p class="section-subtitle">To'liq stack bo'yicha ishlab chiqarish darajasidagi texnologiyalar</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+                <thead>
+                    <tr><th>Qatlam</th><th>Texnologiya</th><th>Versiya</th><th>Maqsad</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="badge badge-blue">Frontend</span></td><td>Next.js</td><td>14</td><td>App Router bilan dashboard UI</td></tr>
+                    <tr><td><span class="badge badge-blue">Frontend</span></td><td>TypeScript</td><td>5.x</td><td>Tip xavfsiz mijoz kodi</td></tr>
+                    <tr><td><span class="badge badge-blue">Frontend</span></td><td>Tailwind CSS</td><td>3.x</td><td>Utility-first stil</td></tr>
+                    <tr><td><span class="badge badge-purple">Backend</span></td><td>.NET</td><td>8.0</td><td>API Gateway va biznes logika</td></tr>
+                    <tr><td><span class="badge badge-purple">Backend</span></td><td>Entity Framework Core</td><td>8.x</td><td>SQLite uchun ORM</td></tr>
+                    <tr><td><span class="badge badge-purple">Backend</span></td><td>SignalR</td><td>8.x</td><td>Real vaqt WebSocket hub</td></tr>
+                    <tr><td><span class="badge badge-green">MCP</span></td><td>JSON-RPC 2.0</td><td>2.0</td><td>Vosita chaqiruvlari protokoli</td></tr>
+                    <tr><td><span class="badge badge-green">MCP</span></td><td>Model Context Protocol</td><td>1.x</td><td>Standartlashtirilgan vosita ta'riflari</td></tr>
+                    <tr><td><span class="badge badge-orange">Infra</span></td><td>Docker va Compose</td><td>24+</td><td>5 xizmatli konteyner sozlama</td></tr>
+                    <tr><td><span class="badge badge-orange">Infra</span></td><td>SQLite</td><td>3.x</td><td>Audit va sozlama ombori</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ASOSIY XUSUSIYATLAR -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">✨ Asosiy xususiyatlar</h2>
+        <p class="section-subtitle">AI vositalarini dasturchi muhitingizga integratsiya qilish uchun zarur bo'lgan hamma narsa</p>
+        <div class="grid-2">
+            <div class="card">
+                <div class="feature-item">
+                    <span class="feature-icon">📡</span>
+                    <div><div class="feature-title">Real vaqt dashboard</div><div class="feature-desc">SignalR WebSocketlar orqali jonli vosita chaqiruvlarini kuzatish. Uchta MCP serveridagi chaqiruvlar, kechikish va xatolarni yagona ko'rinishda ko'ring.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🐙</span>
+                    <div><div class="feature-title">GitHub MCP Server</div><div class="feature-desc">Vositalar: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_repos</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">get_repo</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">create_issue</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_issues</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">get_pull_requests</code>.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🗄</span>
+                    <div><div class="feature-title">Database MCP Server</div><div class="feature-desc">Vositalar: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_tables</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">describe_schema</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">query_table</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">execute_query</code>. Xavfsiz o'qish/yozish ajratish.</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="feature-item">
+                    <span class="feature-icon">📁</span>
+                    <div><div class="feature-title">FileSystem MCP Server</div><div class="feature-desc">Vositalar: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_files</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">read_file</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">write_file</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">search_files</code>. Qum quti katalog kirishgi.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📋</span>
+                    <div><div class="feature-title">API Gateway va audit jurnali</div><div class="feature-desc">Har bir vosita chaqiruvi vaqt tamg'asi, metod, parametrlar, javob vaqti va holat bilan saqlanadi. EF Core orqali SQLite-da to'liq audit izi.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💓</span>
+                    <div><div class="feature-title">Fon holati tekshiruvi</div><div class="feature-desc">Yashirin xizmat har 30 soniyada uchta MCP serverini tekshiradi. Holat o'zgarishlari SignalR orqali ulangan dashboard mijozlariga uzatiladi.</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API ENDPOINTLAR -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🔌 API Endpointlar</h2>
+        <p class="section-subtitle">.NET 8 API Gateway tomonidan ochiq qilingan 15 ta REST endpoint</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+                <thead>
+                    <tr><th>Metod</th><th>Endpoint</th><th>Tavsif</th><th>Server</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/mcp/servers</td><td>Barcha ro'yxatdagi MCP serverlar va ularning holati</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/mcp/tools</td><td>Barcha serverlardan vositalarni yig'ish</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/mcp/call</td><td>Vosita chaqiruvini bajarish (JSON-RPC proksi)</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/audit/logs</td><td>Filtrlar bilan sahifalangan audit jurnali</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/audit/stats</td><td>Yig'ilgan chaqiruv statistikasi</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/github/repos</td><td>Repozitoriylar ro'yxati (GitHub MCP orqali)</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/github/issues</td><td>Yangi GitHub muammo yaratish</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/github/pulls/:repo</td><td>Repozitoriy uchun pull requestlar ro'yxati</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/db/tables</td><td>Barcha ma'lumotlar bazasi jadvallarini ro'yxatga olish</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/db/schema/:table</td><td>Jadval sxemasini tavsiflash</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/db/query</td><td>O'qish so'rovini bajarish</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/fs/list</td><td>Katalog tarkibini ro'yxatga olish</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/fs/read</td><td>Fayl tarkibini o'qish</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/fs/write</td><td>Faylni yozish yoki yangilash</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/fs/search</td><td>Fayllar bo'yicha to'liq matnli qidiruv</td><td>FileSystem</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- TEZKOR BOSHLASH -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🚀 Tezkor boshlash</h2>
+        <p class="section-subtitle">MCP DevBridgeni 5 daqiqadan kam vaqtda mahalliy ishga tushirish</p>
+        <div class="card">
+            <p style="color:#94a3b8; margin-bottom:12px;"><strong style="color:#f1f5f9;">1-qadam:</strong> Repozitoriyni klonlash</p>
+            <div class="code-block">
+<span class="cmd">git clone</span> https://github.com/your-org/mcp-devbridge.git
+<span class="cmd">cd</span> mcp-devbridge
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">2-qadam:</strong> Muhit o'zgaruvchilarini sozlash</p>
+            <div class="code-block">
+<span class="cmd">cp</span> .env.example .env
+<span class="comment"># .env faylini tahrirlang va GitHub tokenini kiriting:</span>
+<span class="str">GITHUB_TOKEN</span>=ghp_your_personal_access_token
+<span class="str">DB_CONNECTION</span>=Data Source=devbridge.db
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">3-qadam:</strong> Docker Compose bilan barcha xizmatlarni ishga tushirish</p>
+            <div class="code-block">
+<span class="cmd">docker compose up</span> --build -d
+<span class="comment"># Xizmatlar ishga tushmoqda:</span>
+<span class="comment">#  ✓ dashboard        → http://localhost:3000</span>
+<span class="comment">#  ✓ api-gateway      → http://localhost:5000</span>
+<span class="comment">#  ✓ mcp-github       → http://localhost:3001</span>
+<span class="comment">#  ✓ mcp-database     → http://localhost:3002</span>
+<span class="comment">#  ✓ mcp-filesystem   → http://localhost:3003</span>
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">4-qadam:</strong> Vosita chaqiruvini sinab ko'rish</p>
+            <div class="code-block">
+<span class="cmd">curl</span> -X POST http://localhost:5000/api/mcp/call \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"server":"github","tool":"list_repos","params":{}}'</span>
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">5-qadam:</strong> Dashboard-ni <a href="http://localhost:3000">http://localhost:3000</a> da oching</p>
+        </div>
+    </section>
+
+    <!-- XAVFSIZLIK -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🔒 Xavfsizlik mulohazalari</h2>
+        <p class="section-subtitle">Ishlab chiqarish joylashuvi uchun o'rnatilgan himoya vositalari</p>
+        <div class="security-grid">
+            <div class="security-card">
+                <h4>🔑 Token boshqaruvi</h4>
+                <p>GitHub tokenlari faqat muhit o'zgaruvchilarida saqlanadi, hech qachon manba kodida yoki ma'lumotlar bazasida emas. Tokenlar API javoblarida qaytarilmaydi.</p>
+            </div>
+            <div class="security-card">
+                <h4>📋 Audit jurnali</h4>
+                <p>Har bir vosita chaqiruvi chaqiruvchi identifikatori, parametrlar, javob vaqti va HTTP holati bilan saqlanadi. Jurnallar yozilgandan keyin o'zgartirib bo'lmaydi.</p>
+            </div>
+            <div class="security-card">
+                <h4>🗂 FileSystem qum qutisi</h4>
+                <p>FileSystem MCP serveri sozlanishi mumkin bo'lgan ildiz katalogida ishlaydi. Yo'l kesib o'tish urinishlari (../) tekshiruv qatlamida bloklanadi.</p>
+            </div>
+            <div class="security-card">
+                <h4>🛡 So'rov xavfsizligi</h4>
+                <p>Ma'lumotlar bazasi vositasi o'qish so'rovlarini yozish so'rovlaridan ajratadi. DDL iboralari (DROP, CREATE) query_table vositasida sukut bo'yicha bloklanadi.</p>
+            </div>
+            <div class="security-card">
+                <h4>🏥 Holat monitoringi</h4>
+                <p>Fon holati tekshiruvlari server nosozliklarini 30 soniya ichida aniqlaydi. Nosog'lom serverlar tiklanguncha marshrutlashdan chiqarib tashlanadi.</p>
+            </div>
+            <div class="security-card">
+                <h4>🐳 Tarmoq izolyatsiyasi</h4>
+                <p>Docker Compose barcha xizmatlarni ichki tarmoqqa joylashtiradi. Faqat dashboard (3000) va gateway (5000) xostga ochiq.</p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<footer>
+    <p>MCP DevBridge &nbsp;·&nbsp; AI/ML Portfolio &nbsp;·&nbsp; <span>.NET 8</span>, <span>Next.js 14</span>, <span>Model Context Protocol</span> bilan qurilgan</p>
+    <p style="margin-top:8px; color:#334155;">Portfel namoyishi uchun yaratilgan hujjat.</p>
+</footer>
+
+</body>
+</html>

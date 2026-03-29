@@ -1,0 +1,21 @@
+{
+  "app": {
+    "name": "Sample Project",
+    "version": "1.0.0",
+    "environment": "development"
+  },
+  "server": {
+    "port": 3000,
+    "host": "localhost",
+    "cors": {
+      "enabled": true,
+      "origins": [
+        "http://localhost:3000"
+      ]
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json"
+  }
+}

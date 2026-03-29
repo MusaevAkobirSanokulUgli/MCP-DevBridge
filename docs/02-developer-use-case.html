@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP DevBridge — Developer Use Case Guide</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── Language bar ── */
+    .lang-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      background: #0a1020;
+      border-bottom: 1px solid #1e293b;
+      backdrop-filter: blur(8px);
+    }
+    .lang-btn {
+      padding: 6px 18px;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .2s;
+    }
+    .lang-btn:hover { border-color: #6366f1; color: #e2e8f0; }
+    .lang-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+    /* ── Page wrapper ── */
+    .page { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 48px 24px 40px;
+      border-bottom: 1px solid #1e293b;
+      margin-bottom: 40px;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: #1e293b;
+      border: 1px solid #6366f1;
+      color: #818cf8;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .hero p { color: #94a3b8; font-size: 1rem; max-width: 640px; margin: 0 auto; }
+
+    /* ── Cards / sections ── */
+    .card {
+      background: #1e293b;
+      border: 1px solid #2d3f58;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #818cf8;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #2d3f58;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #c7d2fe;
+      margin: 20px 0 10px;
+    }
+    .card p { color: #cbd5e1; margin-bottom: 10px; }
+    .card ul, .card ol { padding-left: 20px; color: #cbd5e1; }
+    .card li { margin-bottom: 6px; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: #79c0ff;
+    }
+    pre code { color: #e6edf3; }
+    .inline-code {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+      color: #79c0ff;
+    }
+
+    /* ── Tables ── */
+    .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th {
+      background: #0f172a;
+      color: #818cf8;
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid #334155;
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    tr:nth-child(even) td { background: #1a2438; }
+    tr:hover td { background: #223044; }
+
+    /* ── Tier badges in tables ── */
+    .badge-req { color: #f87171; font-weight: 600; font-size: 12px; }
+    .badge-opt { color: #4ade80; font-weight: 600; font-size: 12px; }
+
+    /* ── Step list ── */
+    .step-list { list-style: none; padding: 0; counter-reset: step-counter; }
+    .step-list li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #6366f1;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { color: #e2e8f0; display: block; margin-bottom: 4px; }
+    .step-body p { color: #94a3b8; margin: 0; font-size: 13.5px; }
+
+    /* ── Use case cards ── */
+    .uc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin: 14px 0; }
+    .uc-card {
+      background: #0f172a;
+      border: 1px solid #2d3f58;
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .uc-id { font-size: 11px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .uc-title { font-size: .95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+    .uc-desc { font-size: 13px; color: #94a3b8; }
+
+    /* ── URL chips ── */
+    .url-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+      color: #34d399;
+      margin: 4px 4px 4px 0;
+    }
+
+    /* ── Alert boxes ── */
+    .alert {
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      border-left: 4px solid;
+    }
+    .alert-info { background: #0c1f3f; border-color: #3b82f6; }
+    .alert-info .alert-title { color: #60a5fa; font-weight: 700; margin-bottom: 6px; }
+    .alert-tip { background: #0e1a10; border-color: #22c55e; }
+    .alert-tip .alert-title { color: #4ade80; font-weight: 700; margin-bottom: 6px; }
+    .alert-warn { background: #1c1008; border-color: #f59e0b; }
+    .alert-warn .alert-title { color: #fbbf24; font-weight: 700; margin-bottom: 6px; }
+    .alert-success { background: #051a10; border-color: #22c55e; }
+    .alert-success .alert-title { color: #4ade80; font-weight: 700; margin-bottom: 6px; }
+
+    /* ── Settings section ── */
+    .settings-section { margin-top: 48px; }
+    .settings-section > h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #2d3f58;
+    }
+    .settings-section > p { color: #94a3b8; margin-bottom: 24px; }
+
+    .settings-card {
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      border: 1px solid;
+    }
+    .settings-card.dev {
+      background: #060e1f;
+      border-color: #1d4ed8;
+    }
+    .settings-card.prod {
+      background: #041409;
+      border-color: #166534;
+    }
+    .settings-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid;
+    }
+    .settings-card.dev h3 { color: #60a5fa; border-color: #1d4ed8; }
+    .settings-card.prod h3 { color: #4ade80; border-color: #166534; }
+
+    /* ── Method tag ── */
+    .method-get { background: #064e3b; color: #6ee7b7; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; font-family: monospace; }
+    .method-post { background: #1e3a5f; color: #93c5fd; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+<!-- Language switcher -->
+<div class="lang-bar">
+  <button onclick="switchLang('en')" id="btn-en" class="lang-btn active">&#127482;&#127480; English</button>
+  <button onclick="switchLang('uz')" id="btn-uz" class="lang-btn">&#127482;&#127487; O'zbek</button>
+  <button onclick="switchLang('ko')" id="btn-ko" class="lang-btn">&#127472;&#127479; &#54620;&#44397;&#50612;</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ENGLISH
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="lang-en" class="lang-content">
+<div class="page">
+
+  <div class="hero">
+    <div class="badge">Developer Guide</div>
+    <h1>MCP DevBridge</h1>
+    <p>Developer Use Case Guide — Step-by-step workflows, testing, and real-world usage patterns</p>
+  </div>
+
+  <!-- ── Quick Start ── -->
+  <div class="card">
+    <h2>&#9889; Quick Start (Docker)</h2>
+    <p>The fastest way to get the entire platform running is via Docker Compose. One command builds and starts all 5 services:</p>
+
+    <pre><code>cd project-1-mcp-devbridge
+docker compose up --build</code></pre>
+
+    <p>Once running, access the platform at:</p>
+    <div>
+      <span class="url-chip">&#127760; http://localhost:3000</span>
+      <span style="color:#94a3b8; font-size:13px;"> — Next.js Management UI</span>
+    </div>
+    <div style="margin-top:6px;">
+      <span class="url-chip">&#128196; http://localhost:5000/swagger</span>
+      <span style="color:#94a3b8; font-size:13px;"> — .NET Backend Swagger UI</span>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:16px;">
+      <div class="alert-title">&#9432; First Run — Database Seeding</div>
+      <p style="color:#bfdbfe; margin:0;">The first time the backend starts, it automatically seeds all 3 MCP servers (GitHub, Database, FileSystem) into the SQLite database. No manual data entry is required. Subsequent restarts will not re-seed if the records already exist.</p>
+    </div>
+  </div>
+
+  <!-- ── Local Dev Setup ── -->
+  <div class="card">
+    <h2>&#128295; Local Development Setup</h2>
+    <p>For active development with hot-reload and debugger support, run each tier independently.</p>
+
+    <h3>1. MCP Servers (TypeScript)</h3>
+    <p>Start all 3 servers simultaneously using the npm start script:</p>
+    <pre><code>cd mcp-servers
+npm install
+npm start</code></pre>
+    <p>This launches all three on ports 3001, 3002, and 3003 in parallel. To run a single server individually for debugging:</p>
+    <pre><code># GitHub server only (port 3001)
+cd mcp-servers
+npx ts-node src/github-server.ts
+
+# Database server only (port 3002)
+npx ts-node src/database-server.ts
+
+# FileSystem server only (port 3003)
+npx ts-node src/filesystem-server.ts</code></pre>
+
+    <h3>2. .NET API Gateway</h3>
+    <pre><code>cd backend/McpGateway
+dotnet run</code></pre>
+    <p>The backend starts on port 5000. On startup it:</p>
+    <ul>
+      <li>Creates the SQLite database (if it does not exist)</li>
+      <li>Seeds the 3 MCP server records</li>
+      <li>Begins background health checks against ports 3001–3003</li>
+      <li>Opens the Swagger UI at <span class="inline-code">http://localhost:5000/swagger</span></li>
+    </ul>
+
+    <h3>3. Next.js Frontend</h3>
+    <pre><code>cd frontend
+npm install
+npm run dev</code></pre>
+    <p>Starts on port 3000 (Next.js will use the next available port if 3000 is occupied). The frontend reads <span class="inline-code">NEXT_PUBLIC_API_URL</span> from <span class="inline-code">frontend/.env.local</span> to locate the backend.</p>
+  </div>
+
+  <!-- ── Step-by-step Workflow ── -->
+  <div class="card">
+    <h2>&#128203; Step-by-Step Workflow</h2>
+    <p>Follow these steps to go from a fresh start to running your first tool invocation through the UI:</p>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Start MCP Servers</strong>
+          <p>Run <span class="inline-code">npm start</span> in the <span class="inline-code">mcp-servers/</span> directory. Confirm all three are listening by checking <span class="inline-code">http://localhost:3001/health</span>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Start .NET Backend</strong>
+          <p>Run <span class="inline-code">dotnet run</span> in <span class="inline-code">backend/McpGateway</span>. The backend seeds the DB and immediately begins health-checking all three MCP servers.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Start Next.js Frontend</strong>
+          <p>Run <span class="inline-code">npm run dev</span> in <span class="inline-code">frontend/</span>. Navigate to <span class="inline-code">http://localhost:3000</span>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Navigate to the Servers Page</strong>
+          <p>You will see 3 seeded server entries: GitHub MCP Server, Database MCP Server, FileSystem MCP Server — each showing their URL and current status.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Click "Start" on Each Server</strong>
+          <p>The UI calls the backend, which pings the server's <span class="inline-code">/health</span> endpoint, sets status to Online, and syncs the tool list from <span class="inline-code">/tools</span> into the database.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>Navigate to the Tools Page</strong>
+          <p>All 13 tools appear, grouped by their parent MCP server. Each tool shows its name, description, and required input parameters.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <strong>Click a Tool to Open ToolInvoker</strong>
+          <p>A modal opens with dynamically generated input fields for each parameter the tool accepts, based on its JSON schema.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">8</div>
+        <div class="step-body">
+          <strong>Fill Parameters and Click "Invoke Tool"</strong>
+          <p>The frontend POSTs to the backend which proxies the call to the MCP server via JSON-RPC 2.0. The result and execution duration are displayed in the modal.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">9</div>
+        <div class="step-body">
+          <strong>Navigate to the Logs Page</strong>
+          <p>Every connection event and tool invocation is logged here with its timestamp, duration, status (success / error), input parameters, and result payload.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ── Testing MCP Servers Directly ── -->
+  <div class="card">
+    <h2>&#128313; Testing MCP Servers Directly (curl)</h2>
+    <p>All MCP servers can be tested independently using <span class="inline-code">curl</span> before involving the .NET backend or the UI. This is the fastest way to validate that a server is up and a tool works.</p>
+
+    <h3>Health &amp; Info Endpoints</h3>
+    <pre><code># Check if a server is alive
+curl http://localhost:3001/health
+
+# Get server metadata (name, version, description)
+curl http://localhost:3001/info
+
+# List all available tools with their schemas
+curl http://localhost:3001/tools</code></pre>
+
+    <h3>Invoke a Tool via REST (Convenience Endpoint)</h3>
+    <pre><code># List repositories for a GitHub user/org
+curl -X POST http://localhost:3001/tools/list_repos \
+  -H "Content-Type: application/json" \
+  -d '{"owner": "microsoft"}'
+
+# Describe a database table
+curl -X POST http://localhost:3002/tools/describe_table \
+  -H "Content-Type: application/json" \
+  -d '{"table_name": "McpServers"}'
+
+# List files in sandbox
+curl -X POST http://localhost:3003/tools/list_files \
+  -H "Content-Type: application/json" \
+  -d '{"path": "."}'</code></pre>
+
+    <h3>Invoke via JSON-RPC 2.0 (Canonical Protocol)</h3>
+    <pre><code># JSON-RPC 2.0 call to list_repos
+curl -X POST http://localhost:3001/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "list_repos",
+      "arguments": { "owner": "microsoft" }
+    }
+  }'</code></pre>
+
+    <div class="alert alert-tip">
+      <div class="alert-title">&#128161; Tip — Test All 3 Servers Health at Once</div>
+      <p style="color:#bbf7d0; margin:0;">Run <span class="inline-code">curl http://localhost:3001/health &amp;&amp; curl http://localhost:3002/health &amp;&amp; curl http://localhost:3003/health</span> to confirm all three are up before starting the backend.</p>
+    </div>
+  </div>
+
+  <!-- ── Use Cases ── -->
+  <div class="card">
+    <h2>&#127919; Use Cases</h2>
+    <p>Six primary developer use cases are supported end-to-end by MCP DevBridge:</p>
+
+    <div class="uc-grid">
+      <div class="uc-card">
+        <div class="uc-id">UC-01</div>
+        <div class="uc-title">GitHub Integration</div>
+        <div class="uc-desc">Connect the GitHub MCP Server to list repositories, browse open issues, and view commit history for any GitHub user or organization — all without leaving the UI.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-02</div>
+        <div class="uc-title">Database Exploration</div>
+        <div class="uc-desc">Use the Database MCP Server to list all tables in the connected SQLite database, describe their schema and column types, and run SELECT queries to inspect data.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-03</div>
+        <div class="uc-title">File System Browsing</div>
+        <div class="uc-desc">Use the FileSystem MCP Server to list files in the sandbox directory and read file contents. Write and delete operations require <span class="inline-code">ALLOW_WRITE=true</span>.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-04</div>
+        <div class="uc-title">Tool Invocation UI</div>
+        <div class="uc-desc">Click any tool in the Tools page to open the ToolInvoker modal. Fill in parameters in the dynamically-rendered form and see the JSON result and execution duration inline.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-05</div>
+        <div class="uc-title">Audit Trail &amp; Logging</div>
+        <div class="uc-desc">Every tool invocation is written to the ToolInvocations table and displayed on the Logs page with full input parameters, result payload, execution time in ms, and success/error status.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-06</div>
+        <div class="uc-title">Multi-Server Management</div>
+        <div class="uc-desc">Start and stop individual MCP servers from the Servers page. Real-time status updates are pushed via SignalR so the UI reflects the current health without page refresh.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── API Endpoints Reference ── -->
+  <div class="card">
+    <h2>&#128196; Backend API Endpoints (15 Total)</h2>
+    <p>The .NET backend exposes 15 REST endpoints. All tool invocations flow through the backend, which persists results and proxies to MCP servers.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/servers</span></td><td>List all registered MCP servers</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers</span></td><td>Register a new MCP server</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/servers/{id}</span></td><td>Get a specific server by ID</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers/{id}/start</span></td><td>Health check + tool sync for a server</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers/{id}/stop</span></td><td>Mark a server as offline</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/tools</span></td><td>List all synced tools across all servers</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/tools/{id}</span></td><td>Get a specific tool's schema and metadata</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/tools/{id}/invoke</span></td><td>Invoke a tool with parameters — proxies to MCP server</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/invocations</span></td><td>List all tool invocation records</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/invocations/{id}</span></td><td>Get a specific invocation's full details</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/logs</span></td><td>List all connection and event logs</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/logs/server/{id}</span></td><td>Get logs scoped to a specific server</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/health</span></td><td>Backend health check endpoint</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/swagger</span></td><td>Swagger UI (Development mode only)</td></tr>
+          <tr><td>WS</td><td><span class="inline-code">/hubs/status</span></td><td>SignalR hub for real-time server status updates</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       REQUIRED SETTINGS
+       ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <h2>&#9881; Required Settings</h2>
+    <p>All environment variables and configuration values needed to run MCP DevBridge. These must be set before starting the respective service.</p>
+
+    <!-- Dev Mode -->
+    <div class="settings-card dev">
+      <h3>&#128187; Development Mode Settings</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Setting</th><th>Where to Set</th><th>How to Get / Notes</th><th>Required?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span> or shell env</td>
+              <td>GitHub.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token. Select scopes: <strong>repo</strong>, <strong>read:user</strong></td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>Set to <code>false</code> (default) to block write/delete. Set to <code>true</code> only when you need <code>write_file</code> or <code>delete_file</code> during local development.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>FileSystem server restricts all file operations to this path. Default: <code>./sandbox</code> (relative to mcp-servers directory). Create the directory if it does not exist.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">DB_PATH</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>SQLite database file path for the Database MCP Server. Default: <code>./data/dev.db</code>. The file and directory are auto-created by EF Core on first run.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td><span class="inline-code">frontend/.env.local</span></td>
+              <td>URL of the .NET backend API. For local dev: <code>http://localhost:5000</code>. This is a Next.js public env var — must be prefixed with <code>NEXT_PUBLIC_</code>.</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Shell env or <span class="inline-code">backend/launchSettings.json</span></td>
+              <td>Set to <code>Development</code> to enable Swagger UI, detailed error pages, and development-mode logging.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-title">&#9432; SQLite Auto-Creation</div>
+        <p style="color:#bfdbfe; margin:0;">SQLite is auto-created by Entity Framework Core on the first run of the .NET backend. No <code>dotnet ef database update</code> or manual SQL scripts are needed in development.</p>
+      </div>
+    </div>
+
+    <!-- Production Mode -->
+    <div class="settings-card prod">
+      <h3>&#127758; Production Mode Settings (Free Tier)</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Setting</th><th>Where to Set</th><th>How to Get / Notes</th><th>Required?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td>Hosting platform secrets / env vars</td>
+              <td>Same free GitHub Personal Access Token as dev. Never expires unless you set an expiration date. Store as a secret in your hosting platform (Fly.io secrets, Railway env vars, etc.).</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Hosting platform env vars</td>
+              <td>Set to <code>Production</code>. Disables Swagger UI, enables production logging, hides detailed error messages from end users.</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td>Vercel / Netlify env vars</td>
+              <td>Point to your deployed backend URL, e.g. <code>https://your-backend.fly.dev</code>. Set this in the Vercel dashboard under Project → Settings → Environment Variables.</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td>Hosting platform env vars</td>
+              <td>Strongly recommended to keep as <code>false</code> in production. Only set to <code>true</code> if your use case explicitly requires remote file writes.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td>Hosting platform env vars / Dockerfile</td>
+              <td>Set to a container-safe path: <code>/app/sandbox</code>. Ensure this directory exists inside the container image or is created by the entrypoint script.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td>Database (PostgreSQL)</td>
+              <td>Connection string in backend env</td>
+              <td>For multi-instance production: Supabase free tier, Railway free tier, or Neon free tier all provide a free PostgreSQL connection string. Replace SQLite connection in <code>appsettings.Production.json</code>.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Free Hosting Options</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Free Platform</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Next.js Frontend</td><td>Vercel Hobby Plan</td><td>Free, optimised for Next.js, automatic CI/CD from GitHub</td></tr>
+            <tr><td>Next.js Frontend (alt)</td><td>Netlify Free Tier</td><td>100 GB bandwidth/month free</td></tr>
+            <tr><td>Backend + MCP containers</td><td>Fly.io Free Tier</td><td>3 shared-CPU VMs free; supports Docker Compose via <code>fly launch</code></td></tr>
+            <tr><td>Backend + MCP containers (alt)</td><td>Railway Free Tier</td><td>$5 credit/month; easy Docker deploy</td></tr>
+            <tr><td>Full stack (VPS)</td><td>Oracle Cloud Always Free</td><td>2 AMD VMs always free; run full Docker Compose stack</td></tr>
+            <tr><td>Full stack (VPS alt)</td><td>DigitalOcean Droplet</td><td>$4/month for 512 MB RAM droplet</td></tr>
+            <tr><td>PostgreSQL</td><td>Supabase / Neon / Railway</td><td>All offer free PostgreSQL tiers with connection string</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">&#10003; SQLite in Single-Server Production</div>
+        <p style="color:#bbf7d0; margin:0;">SQLite works perfectly for single-server production deployments. Only upgrade to PostgreSQL if you need multiple backend instances or require concurrent write throughput beyond what SQLite handles.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</div><!-- /lang-en -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     O'ZBEK
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="lang-uz" class="lang-content" style="display:none">
+<div class="page">
+
+  <div class="hero">
+    <div class="badge">Dasturchi Qo'llanmasi</div>
+    <h1>MCP DevBridge</h1>
+    <p>Dasturchi Foydalanish Holatlari Qo'llanmasi — Bosqichma-bosqich ish oqimlari, sinov va amaliy foydalanish naqshlari</p>
+  </div>
+
+  <!-- ── Tezkor ishga tushirish ── -->
+  <div class="card">
+    <h2>&#9889; Tezkor Ishga Tushirish (Docker)</h2>
+    <p>Butun platformani ishga tushirishning eng tez usuli Docker Compose orqali. Bitta buyruq barcha 5 xizmatni quradi va ishga tushiradi:</p>
+
+    <pre><code>cd project-1-mcp-devbridge
+docker compose up --build</code></pre>
+
+    <p>Ishga tushgandan so'ng platformaga quyidagi manzillar orqali kiring:</p>
+    <div>
+      <span class="url-chip">&#127760; http://localhost:3000</span>
+      <span style="color:#94a3b8; font-size:13px;"> — Next.js Boshqaruv Interfeysi</span>
+    </div>
+    <div style="margin-top:6px;">
+      <span class="url-chip">&#128196; http://localhost:5000/swagger</span>
+      <span style="color:#94a3b8; font-size:13px;"> — .NET Backend Swagger UI</span>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:16px;">
+      <div class="alert-title">&#9432; Birinchi Ishga Tushirish — Ma'lumotlar Bazasini To'ldirish</div>
+      <p style="color:#bfdbfe; margin:0;">Backend birinchi marta ishga tushganda u avtomatik ravishda barcha 3 MCP serverni (GitHub, Ma'lumotlar bazasi, FileSystem) SQLite ma'lumotlar bazasiga joylaydi. Qo'lda ma'lumot kiritish talab qilinmaydi. Keyingi qayta ishga tushirishlarda yozuvlar mavjud bo'lsa, ular qayta joylashtirilmaydi.</p>
+    </div>
+  </div>
+
+  <!-- ── Mahalliy ishlab chiqish sozlamalari ── -->
+  <div class="card">
+    <h2>&#128295; Mahalliy Ishlab Chiqish Sozlamalari</h2>
+    <p>Hot-reload va disk raskadrovka qo'llab-quvvatlash bilan faol ishlab chiqish uchun har bir qatlamni mustaqil ravishda ishga tushiring.</p>
+
+    <h3>1. MCP Serverlar (TypeScript)</h3>
+    <p>npm start skripti yordamida 3 serverni bir vaqtda ishga tushiring:</p>
+    <pre><code>cd mcp-servers
+npm install
+npm start</code></pre>
+    <p>Bu uchala serverni paralel ravishda 3001, 3002 va 3003 portlarida ishga tushiradi. Disk raskadrovka uchun bitta serverni alohida ishga tushirish:</p>
+    <pre><code># Faqat GitHub serveri (port 3001)
+cd mcp-servers
+npx ts-node src/github-server.ts
+
+# Faqat ma'lumotlar bazasi serveri (port 3002)
+npx ts-node src/database-server.ts
+
+# Faqat fayl tizimi serveri (port 3003)
+npx ts-node src/filesystem-server.ts</code></pre>
+
+    <h3>2. .NET API Shlyuzi</h3>
+    <pre><code>cd backend/McpGateway
+dotnet run</code></pre>
+    <p>Backend 5000 portida ishga tushadi. Ishga tushirishda u:</p>
+    <ul>
+      <li>SQLite ma'lumotlar bazasini yaratadi (mavjud bo'lmasa)</li>
+      <li>3 MCP server yozuvini joylashtiradi</li>
+      <li>3001–3003 portlariga nisbatan fon sog'liq tekshiruvlarini boshlaydi</li>
+      <li><span class="inline-code">http://localhost:5000/swagger</span> manzilida Swagger UI ni ochadi</li>
+    </ul>
+
+    <h3>3. Next.js Frontend</h3>
+    <pre><code>cd frontend
+npm install
+npm run dev</code></pre>
+    <p>3000 portida ishga tushadi (3000 band bo'lsa Next.js keyingi mavjud portni ishlatadi). Frontend backend joylashuvini topish uchun <span class="inline-code">frontend/.env.local</span> dan <span class="inline-code">NEXT_PUBLIC_API_URL</span> ni o'qiydi.</p>
+  </div>
+
+  <!-- ── Bosqichma-bosqich ish oqimi ── -->
+  <div class="card">
+    <h2>&#128203; Bosqichma-Bosqich Ish Oqimi</h2>
+    <p>Yangi boshlanishdan UI orqali birinchi vosita chaqiruvini bajarishgacha bo'lgan jarayon:</p>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>MCP Serverlarni Ishga Tushirish</strong>
+          <p><span class="inline-code">mcp-servers/</span> katalogida <span class="inline-code">npm start</span> ni ishga tushiring. <span class="inline-code">http://localhost:3001/health</span> ni tekshirib uchtalasi ham ishlayotganligini tasdiqlang.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>.NET Backendni Ishga Tushirish</strong>
+          <p><span class="inline-code">backend/McpGateway</span> da <span class="inline-code">dotnet run</span> ni ishga tushiring. Backend ma'lumotlar bazasini to'ldiradi va darhol uchala MCP serverni sog'liq jihatidan tekshirishni boshlaydi.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Next.js Frontendni Ishga Tushirish</strong>
+          <p><span class="inline-code">frontend/</span> da <span class="inline-code">npm run dev</span> ni ishga tushiring. <span class="inline-code">http://localhost:3000</span> ga o'ting.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Serverlar Sahifasiga O'tish</strong>
+          <p>3 ta joylashtirilgan server yozuvi ko'rinadi: GitHub MCP Server, Database MCP Server, FileSystem MCP Server — har biri URL manzili va joriy holat bilan.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Har Bir Serverda "Start" ga Bosish</strong>
+          <p>UI backend ni chaqiradi, bu esa serverning <span class="inline-code">/health</span> endpointiga murojaat qiladi, holatni Online ga o'rnatadi va <span class="inline-code">/tools</span> dan vosita ro'yxatini ma'lumotlar bazasiga sinxronlashtiradi.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>Vositalar Sahifasiga O'tish</strong>
+          <p>Barcha 13 vosita ota MCP serverlari bo'yicha guruhlangan holda ko'rinadi. Har bir vosita nomi, tavsifi va talab qilinadigan kirish parametrlarini ko'rsatadi.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <strong>ToolInvoker ni Ochish uchun Vositaga Bosish</strong>
+          <p>Vositaning JSON sxemasiga asoslanib dinamik ravishda yaratilgan kirish maydonlari bilan modal oyna ochiladi.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">8</div>
+        <div class="step-body">
+          <strong>Parametrlarni To'ldirish va "Invoke Tool" ga Bosish</strong>
+          <p>Frontend backend ga POST so'rovi yuboradi, bu esa chaqiruvni JSON-RPC 2.0 orqali MCP serverga proksilaydi. Natija va bajarilish davomiyligi modal oynada ko'rsatiladi.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">9</div>
+        <div class="step-body">
+          <strong>Jurnal Sahifasiga O'tish</strong>
+          <p>Har bir ulanish hodisasi va vosita chaqiruvi bu yerda vaqt tamg'asi, davomiyligi, holati (muvaffaqiyat / xato), kirish parametrlari va natija yuklamasi bilan qayd etiladi.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ── MCP Serverlarni Bevosita Sinash ── -->
+  <div class="card">
+    <h2>&#128313; MCP Serverlarni Bevosita Sinash (curl)</h2>
+    <p>Barcha MCP serverlarni .NET backend yoki UI ni jalb qilmasdan <span class="inline-code">curl</span> yordamida mustaqil ravishda sinab ko'rish mumkin. Bu server ishlab turganligini va vosita ishlashini tasdiqlashning eng tez usuli.</p>
+
+    <h3>Sog'liq va Ma'lumot Endpointlari</h3>
+    <pre><code># Server ishlayotganligini tekshirish
+curl http://localhost:3001/health
+
+# Server metama'lumotlarini olish (nom, versiya, tavsif)
+curl http://localhost:3001/info
+
+# Barcha mavjud vositalarni sxemalari bilan ro'yxatlash
+curl http://localhost:3001/tools</code></pre>
+
+    <h3>REST Orqali Vosita Chaqiruvi (Qulay Endpoint)</h3>
+    <pre><code># GitHub foydalanuvchisi/tashkilotining repozitoriylarini ro'yxatlash
+curl -X POST http://localhost:3001/tools/list_repos \
+  -H "Content-Type: application/json" \
+  -d '{"owner": "microsoft"}'
+
+# Ma'lumotlar bazasi jadvalini tavsiflash
+curl -X POST http://localhost:3002/tools/describe_table \
+  -H "Content-Type: application/json" \
+  -d '{"table_name": "McpServers"}'
+
+# Sandbox dagi fayllarni ro'yxatlash
+curl -X POST http://localhost:3003/tools/list_files \
+  -H "Content-Type: application/json" \
+  -d '{"path": "."}'</code></pre>
+
+    <h3>JSON-RPC 2.0 Orqali Chaqiruv (Kanonik Protokol)</h3>
+    <pre><code># list_repos uchun JSON-RPC 2.0 chaqiruvi
+curl -X POST http://localhost:3001/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "list_repos",
+      "arguments": { "owner": "microsoft" }
+    }
+  }'</code></pre>
+
+    <div class="alert alert-tip">
+      <div class="alert-title">&#128161; Maslahat — 3 Serverning Sog'lig'ini Bir Vaqtda Tekshirish</div>
+      <p style="color:#bbf7d0; margin:0;">Backend ni ishga tushirishdan oldin uchtalasi ishlab turganligini tasdiqlash uchun <span class="inline-code">curl http://localhost:3001/health &amp;&amp; curl http://localhost:3002/health &amp;&amp; curl http://localhost:3003/health</span> ni ishga tushiring.</p>
+    </div>
+  </div>
+
+  <!-- ── Foydalanish holatlari ── -->
+  <div class="card">
+    <h2>&#127919; Foydalanish Holatlari</h2>
+    <p>MCP DevBridge tomonidan to'liq qo'llab-quvvatlanadigan oltita asosiy dasturchi foydalanish holati:</p>
+
+    <div class="uc-grid">
+      <div class="uc-card">
+        <div class="uc-id">FK-01</div>
+        <div class="uc-title">GitHub Integratsiyasi</div>
+        <div class="uc-desc">GitHub MCP Serverini ulab, interfeysdan chiqmasdan istalgan GitHub foydalanuvchisi yoki tashkilot uchun repozitoriylarni ro'yxatlash, ochiq masalalarni ko'rish va commit tarixini tekshirish.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">FK-02</div>
+        <div class="uc-title">Ma'lumotlar Bazasini Tekshirish</div>
+        <div class="uc-desc">Database MCP Serverini ulangan SQLite ma'lumotlar bazasidagi barcha jadvallarni ro'yxatlash, ularning sxemasi va ustun turlarini tavsiflash hamda ma'lumotlarni tekshirish uchun SELECT so'rovlarini bajarish uchun ishlating.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">FK-03</div>
+        <div class="uc-title">Fayl Tizimini Ko'rish</div>
+        <div class="uc-desc">FileSystem MCP Serverini sandbox katalogidagi fayllarni ro'yxatlash va fayl mazmunini o'qish uchun ishlating. Yozish va o'chirish operatsiyalari <span class="inline-code">ALLOW_WRITE=true</span> talab qiladi.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">FK-04</div>
+        <div class="uc-title">Vosita Chaqiruvi UI</div>
+        <div class="uc-desc">Vositalar sahifasidagi istalgan vositani bosib ToolInvoker modal oynasini oching. Dinamik yaratilgan formada parametrlarni to'ldiring va JSON natijasi hamda bajarilish davomiyligini to'g'ridan-to'g'ri ko'ring.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">FK-05</div>
+        <div class="uc-title">Tekshirish Izi va Jurnal</div>
+        <div class="uc-desc">Har bir vosita chaqiruvi ToolInvocations jadvaliga yoziladi va Jurnal sahifasida to'liq kirish parametrlari, natija yuklamasi, millisekunddagi bajarilish vaqti va muvaffaqiyat/xato holati bilan ko'rsatiladi.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">FK-06</div>
+        <div class="uc-title">Ko'p Serverli Boshqaruv</div>
+        <div class="uc-desc">Serverlar sahifasidan alohida MCP serverlarni ishga tushiring va to'xtating. Real vaqtdagi holat yangilanishlari SignalR orqali uzatiladi, shuning uchun UI sahifani yangilamasdan joriy sog'liqni aks ettiradi.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── API Endpointlari Mos yozuvlari ── -->
+  <div class="card">
+    <h2>&#128196; Backend API Endpointlari (Jami 15)</h2>
+    <p>.NET backend 15 ta REST endpointini ochadi. Barcha vosita chaqiruvlari backenddan o'tadi, bu natijalarni saqlaydi va MCP serverlarga proksilaydi.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Metod</th><th>Endpoint</th><th>Maqsad</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/servers</span></td><td>Barcha ro'yxatga olingan MCP serverlarni ro'yxatlash</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers</span></td><td>Yangi MCP server ro'yxatdan o'tkazish</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/servers/{id}</span></td><td>ID bo'yicha ma'lum bir serverni olish</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers/{id}/start</span></td><td>Server uchun sog'liq tekshiruvi + vosita sinxronlashtiruvi</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers/{id}/stop</span></td><td>Serverni offline deb belgilash</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/tools</span></td><td>Barcha serverlar bo'yicha sinxronlashtirilgan barcha vositalarni ro'yxatlash</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/tools/{id}</span></td><td>Ma'lum bir vositaning sxemasi va metama'lumotlarini olish</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/tools/{id}/invoke</span></td><td>Parametrlar bilan vositani chaqirish — MCP serverga proksilash</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/invocations</span></td><td>Barcha vosita chaqiruvi yozuvlarini ro'yxatlash</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/invocations/{id}</span></td><td>Ma'lum bir chaqiruvning to'liq tafsilotlarini olish</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/logs</span></td><td>Barcha ulanish va hodisa jurналlarini ro'yxatlash</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/logs/server/{id}</span></td><td>Ma'lum bir serverga tegishli jurналlarni olish</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/health</span></td><td>Backend sog'liq tekshiruvi endpointi</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/swagger</span></td><td>Swagger UI (faqat Ishlab chiqish rejimida)</td></tr>
+          <tr><td>WS</td><td><span class="inline-code">/hubs/status</span></td><td>Real vaqtdagi server holati yangilanishlari uchun SignalR hub</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TALAB QILINADIGAN SOZLAMALAR
+       ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <h2>&#9881; Talab Qilinadigan Sozlamalar</h2>
+    <p>MCP DevBridge ni ishga tushirish uchun zarur bo'lgan barcha muhit o'zgaruvchilari va konfiguratsiya qiymatlari. Ular tegishli xizmat ishga tushirilishidan oldin o'rnatilishi kerak.</p>
+
+    <!-- Ishlab chiqish rejimi -->
+    <div class="settings-card dev">
+      <h3>&#128187; Ishlab Chiqish Rejimi Sozlamalari</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Sozlama</th><th>Qayerda o'rnatiladi</th><th>Qanday olish / Izohlar</th><th>Talab qilinadimi?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span> yoki shell env</td>
+              <td>GitHub.com → Sozlamalar → Dasturchi sozlamalari → Shaxsiy kirish tokenlari → Tokenlar (klassik) → Yangi token yaratish. Qamrovlar: <strong>repo</strong>, <strong>read:user</strong></td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>Yozish/o'chirishni bloklash uchun <code>false</code> ga o'rnating (standart). Mahalliy ishlab chiqish paytida <code>write_file</code> yoki <code>delete_file</code> kerak bo'lganda <code>true</code> ga o'rnating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>FileSystem server barcha fayl operatsiyalarini ushbu yo'lga cheklaydi. Standart: <code>./sandbox</code> (mcp-servers katalogiga nisbatan). Katalog mavjud bo'lmasa yarating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">DB_PATH</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>Database MCP Server uchun SQLite ma'lumotlar bazasi fayl yo'li. Standart: <code>./data/dev.db</code>. Fayl va katalog birinchi ishga tushirishda EF Core tomonidan avtomatik yaratiladi.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td><span class="inline-code">frontend/.env.local</span></td>
+              <td>.NET backend API URL manzili. Mahalliy ishlab chiqish uchun: <code>http://localhost:5000</code>. Bu Next.js ommaviy muhit o'zgaruvchisi — <code>NEXT_PUBLIC_</code> bilan boshlanishi shart.</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Shell env yoki <span class="inline-code">backend/launchSettings.json</span></td>
+              <td>Swagger UI, batafsil xato sahifalari va ishlab chiqish rejimida jurnallarni yoqish uchun <code>Development</code> ga o'rnating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-title">&#9432; SQLite Avtomatik Yaratilishi</div>
+        <p style="color:#bfdbfe; margin:0;">SQLite .NET backend birinchi marta ishga tushganda Entity Framework Core tomonidan avtomatik yaratiladi. Ishlab chiqishda <code>dotnet ef database update</code> yoki qo'lda SQL skriptlari talab qilinmaydi.</p>
+      </div>
+    </div>
+
+    <!-- Ishlab chiqarish rejimi -->
+    <div class="settings-card prod">
+      <h3>&#127758; Ishlab Chiqarish Rejimi Sozlamalari (Bepul Tarif)</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Sozlama</th><th>Qayerda o'rnatiladi</th><th>Qanday olish / Izohlar</th><th>Talab qilinadimi?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td>Hosting platformasi maxfiy ma'lumotlari / muhit o'zgaruvchilari</td>
+              <td>Ishlab chiqish bilan bir xil bepul GitHub Shaxsiy Kirish Tokeni. Muddati belgilanmagan bo'lsa hech qachon tugamaydi. Hosting platformangizda maxfiy ma'lumot sifatida saqlang.</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Hosting platformasi muhit o'zgaruvchilari</td>
+              <td><code>Production</code> ga o'rnating. Swagger UI ni o'chiradi, ishlab chiqarish jurналlarini yoqadi, foydalanuvchilardan batafsil xato xabarlarini yashiradi.</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td>Vercel / Netlify muhit o'zgaruvchilari</td>
+              <td>Joylashtirilgan backend URL manziliga yo'naltiring, masalan: <code>https://your-backend.fly.dev</code>. Vercel boshqaruv panelidagi Loyiha → Sozlamalar → Muhit O'zgaruvchilari bo'limida o'rnating.</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td>Hosting platformasi muhit o'zgaruvchilari</td>
+              <td>Ishlab chiqarishda <code>false</code> qiymatida qoldirishni qat'iy tavsiya qilamiz. Faqat foydalanish holatingiz aniq ravishda masofaviy fayl yozishni talab qilsa <code>true</code> ga o'rnating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td>Hosting platformasi muhit o'zgaruvchilari / Dockerfile</td>
+              <td>Konteyner uchun xavfsiz yo'lga o'rnating: <code>/app/sandbox</code>. Bu katalog konteyner tasvirida mavjud bo'lishini yoki kirish skripti tomonidan yaratilishini ta'minlang.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td>Ma'lumotlar bazasi (PostgreSQL)</td>
+              <td>Backend muhitidagi ulanish qatori</td>
+              <td>Ko'p namunali ishlab chiqarish uchun: Supabase bepul tarifi, Railway bepul tarifi yoki Neon bepul tarifi. <code>appsettings.Production.json</code> dagi SQLite ulanishini almashtiring.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Bepul Hosting Variantlari</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Komponent</th><th>Bepul platforma</th><th>Izohlar</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Next.js Frontend</td><td>Vercel Hobby rejimi</td><td>Bepul, Next.js uchun optimallashtirilgan, GitHub'dan avtomatik CI/CD</td></tr>
+            <tr><td>Next.js Frontend (muqobil)</td><td>Netlify bepul tarifi</td><td>Oyiga 100 GB o'tkazish qobiliyati bepul</td></tr>
+            <tr><td>Backend + MCP konteynerlari</td><td>Fly.io bepul tarifi</td><td>3 ta umumiy CPU VM bepul; <code>fly launch</code> orqali Docker Compose</td></tr>
+            <tr><td>Backend + MCP konteynerlari (muqobil)</td><td>Railway bepul tarifi</td><td>Oyiga $5 kredit; oson Docker joylashtirish</td></tr>
+            <tr><td>To'liq stek (VPS)</td><td>Oracle Cloud Always Free</td><td>2 ta AMD VM doimo bepul; to'liq Docker Compose steki</td></tr>
+            <tr><td>To'liq stek (VPS muqobil)</td><td>DigitalOcean Droplet</td><td>512 MB RAM droplet uchun oyiga $4</td></tr>
+            <tr><td>PostgreSQL</td><td>Supabase / Neon / Railway</td><td>Barchasi bepul PostgreSQL tarifi taklif qiladi</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">&#10003; Bitta Serverli Ishlab Chiqarishda SQLite</div>
+        <p style="color:#bbf7d0; margin:0;">SQLite bitta serverli ishlab chiqarish joylashtirmasi uchun mukammal ishlaydi. Faqat bir nechta backend namunasi kerak bo'lganda yoki parallel yozish o'tkazish qobiliyati oshirilishi kerak bo'lganda PostgreSQL ga o'ting.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</div><!-- /lang-uz -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     한국어
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="lang-ko" class="lang-content" style="display:none">
+<div class="page">
+
+  <div class="hero">
+    <div class="badge">개발자 가이드</div>
+    <h1>MCP DevBridge</h1>
+    <p>개발자 사용 사례 가이드 — 단계별 워크플로우, 테스트, 실제 사용 패턴</p>
+  </div>
+
+  <!-- ── 빠른 시작 ── -->
+  <div class="card">
+    <h2>&#9889; 빠른 시작 (Docker)</h2>
+    <p>전체 플랫폼을 실행하는 가장 빠른 방법은 Docker Compose를 통하는 것입니다. 하나의 명령으로 5개의 서비스를 모두 빌드하고 시작합니다:</p>
+
+    <pre><code>cd project-1-mcp-devbridge
+docker compose up --build</code></pre>
+
+    <p>실행 후 다음 주소로 플랫폼에 접근합니다:</p>
+    <div>
+      <span class="url-chip">&#127760; http://localhost:3000</span>
+      <span style="color:#94a3b8; font-size:13px;"> — Next.js 관리 UI</span>
+    </div>
+    <div style="margin-top:6px;">
+      <span class="url-chip">&#128196; http://localhost:5000/swagger</span>
+      <span style="color:#94a3b8; font-size:13px;"> — .NET 백엔드 Swagger UI</span>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:16px;">
+      <div class="alert-title">&#9432; 최초 실행 — 데이터베이스 시딩</div>
+      <p style="color:#bfdbfe; margin:0;">백엔드가 처음 시작될 때, 모든 3개의 MCP 서버(GitHub, 데이터베이스, 파일 시스템)를 SQLite 데이터베이스에 자동으로 시딩합니다. 수동 데이터 입력이 필요하지 않습니다. 레코드가 이미 존재하는 경우 이후 재시작에서는 다시 시딩하지 않습니다.</p>
+    </div>
+  </div>
+
+  <!-- ── 로컬 개발 설정 ── -->
+  <div class="card">
+    <h2>&#128295; 로컬 개발 설정</h2>
+    <p>핫 리로드와 디버거 지원이 있는 활성 개발을 위해 각 계층을 독립적으로 실행합니다.</p>
+
+    <h3>1. MCP 서버 (TypeScript)</h3>
+    <p>npm start 스크립트를 사용하여 3개의 서버를 동시에 시작합니다:</p>
+    <pre><code>cd mcp-servers
+npm install
+npm start</code></pre>
+    <p>이렇게 하면 세 개의 서버가 포트 3001, 3002, 3003에서 병렬로 시작됩니다. 디버깅을 위해 단일 서버를 개별적으로 실행하려면:</p>
+    <pre><code># GitHub 서버만 (포트 3001)
+cd mcp-servers
+npx ts-node src/github-server.ts
+
+# 데이터베이스 서버만 (포트 3002)
+npx ts-node src/database-server.ts
+
+# 파일 시스템 서버만 (포트 3003)
+npx ts-node src/filesystem-server.ts</code></pre>
+
+    <h3>2. .NET API 게이트웨이</h3>
+    <pre><code>cd backend/McpGateway
+dotnet run</code></pre>
+    <p>백엔드는 포트 5000에서 시작됩니다. 시작 시 다음을 수행합니다:</p>
+    <ul>
+      <li>SQLite 데이터베이스 생성 (없는 경우)</li>
+      <li>3개의 MCP 서버 레코드 시딩</li>
+      <li>포트 3001–3003에 대한 백그라운드 상태 확인 시작</li>
+      <li><span class="inline-code">http://localhost:5000/swagger</span>에서 Swagger UI 열기</li>
+    </ul>
+
+    <h3>3. Next.js 프론트엔드</h3>
+    <pre><code>cd frontend
+npm install
+npm run dev</code></pre>
+    <p>포트 3000에서 시작됩니다(3000이 사용 중이면 Next.js가 다음 가용 포트를 사용합니다). 프론트엔드는 백엔드를 찾기 위해 <span class="inline-code">frontend/.env.local</span>에서 <span class="inline-code">NEXT_PUBLIC_API_URL</span>을 읽습니다.</p>
+  </div>
+
+  <!-- ── 단계별 워크플로우 ── -->
+  <div class="card">
+    <h2>&#128203; 단계별 워크플로우</h2>
+    <p>새로운 시작부터 UI를 통해 첫 번째 도구 호출을 실행할 때까지의 단계를 따르십시오:</p>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>MCP 서버 시작</strong>
+          <p><span class="inline-code">mcp-servers/</span> 디렉토리에서 <span class="inline-code">npm start</span>를 실행합니다. <span class="inline-code">http://localhost:3001/health</span>를 확인하여 세 개가 모두 수신 대기 중인지 확인하십시오.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>.NET 백엔드 시작</strong>
+          <p><span class="inline-code">backend/McpGateway</span>에서 <span class="inline-code">dotnet run</span>을 실행합니다. 백엔드는 DB를 시딩하고 즉시 세 개의 MCP 서버 상태 확인을 시작합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Next.js 프론트엔드 시작</strong>
+          <p><span class="inline-code">frontend/</span>에서 <span class="inline-code">npm run dev</span>를 실행합니다. <span class="inline-code">http://localhost:3000</span>으로 이동합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>서버 페이지로 이동</strong>
+          <p>3개의 시딩된 서버 항목이 표시됩니다: GitHub MCP 서버, 데이터베이스 MCP 서버, 파일 시스템 MCP 서버 — 각각 URL과 현재 상태를 표시합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>각 서버에서 "Start" 클릭</strong>
+          <p>UI가 백엔드를 호출하고, 백엔드는 서버의 <span class="inline-code">/health</span> 엔드포인트를 핑하여 상태를 온라인으로 설정하고 <span class="inline-code">/tools</span>에서 도구 목록을 데이터베이스에 동기화합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>도구 페이지로 이동</strong>
+          <p>13개의 도구가 모두 상위 MCP 서버별로 그룹화되어 표시됩니다. 각 도구는 이름, 설명, 필수 입력 매개변수를 표시합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <strong>도구 클릭으로 ToolInvoker 열기</strong>
+          <p>JSON 스키마를 기반으로 도구가 허용하는 각 매개변수에 대해 동적으로 생성된 입력 필드가 있는 모달이 열립니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">8</div>
+        <div class="step-body">
+          <strong>매개변수 입력 후 "Invoke Tool" 클릭</strong>
+          <p>프론트엔드가 백엔드에 POST 요청을 보내고, 백엔드는 JSON-RPC 2.0을 통해 MCP 서버에 호출을 프록시합니다. 결과와 실행 시간이 모달에 표시됩니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">9</div>
+        <div class="step-body">
+          <strong>로그 페이지로 이동</strong>
+          <p>모든 연결 이벤트와 도구 호출이 타임스탬프, 실행 시간, 상태(성공/오류), 입력 매개변수, 결과 페이로드와 함께 여기에 로깅됩니다.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ── MCP 서버 직접 테스트 ── -->
+  <div class="card">
+    <h2>&#128313; MCP 서버 직접 테스트 (curl)</h2>
+    <p>모든 MCP 서버는 .NET 백엔드나 UI 없이 <span class="inline-code">curl</span>을 사용하여 독립적으로 테스트할 수 있습니다. 이것이 서버가 실행 중이고 도구가 작동하는지 검증하는 가장 빠른 방법입니다.</p>
+
+    <h3>상태 확인 및 정보 엔드포인트</h3>
+    <pre><code># 서버가 활성 상태인지 확인
+curl http://localhost:3001/health
+
+# 서버 메타데이터 가져오기 (이름, 버전, 설명)
+curl http://localhost:3001/info
+
+# 스키마와 함께 모든 사용 가능한 도구 목록 조회
+curl http://localhost:3001/tools</code></pre>
+
+    <h3>REST를 통한 도구 호출 (편의 엔드포인트)</h3>
+    <pre><code># GitHub 사용자/조직의 저장소 목록 조회
+curl -X POST http://localhost:3001/tools/list_repos \
+  -H "Content-Type: application/json" \
+  -d '{"owner": "microsoft"}'
+
+# 데이터베이스 테이블 설명
+curl -X POST http://localhost:3002/tools/describe_table \
+  -H "Content-Type: application/json" \
+  -d '{"table_name": "McpServers"}'
+
+# 샌드박스 파일 목록 조회
+curl -X POST http://localhost:3003/tools/list_files \
+  -H "Content-Type: application/json" \
+  -d '{"path": "."}'</code></pre>
+
+    <h3>JSON-RPC 2.0을 통한 호출 (표준 프로토콜)</h3>
+    <pre><code># list_repos에 대한 JSON-RPC 2.0 호출
+curl -X POST http://localhost:3001/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "list_repos",
+      "arguments": { "owner": "microsoft" }
+    }
+  }'</code></pre>
+
+    <div class="alert alert-tip">
+      <div class="alert-title">&#128161; 팁 — 3개 서버 상태 한 번에 확인</div>
+      <p style="color:#bbf7d0; margin:0;">백엔드를 시작하기 전에 세 개가 모두 실행 중인지 확인하려면 <span class="inline-code">curl http://localhost:3001/health &amp;&amp; curl http://localhost:3002/health &amp;&amp; curl http://localhost:3003/health</span>를 실행하십시오.</p>
+    </div>
+  </div>
+
+  <!-- ── 사용 사례 ── -->
+  <div class="card">
+    <h2>&#127919; 사용 사례</h2>
+    <p>MCP DevBridge가 종단 간 지원하는 6가지 주요 개발자 사용 사례:</p>
+
+    <div class="uc-grid">
+      <div class="uc-card">
+        <div class="uc-id">UC-01</div>
+        <div class="uc-title">GitHub 통합</div>
+        <div class="uc-desc">GitHub MCP 서버에 연결하여 UI를 벗어나지 않고 GitHub 사용자나 조직의 저장소 목록 조회, 열린 이슈 탐색, 커밋 히스토리 확인을 할 수 있습니다.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-02</div>
+        <div class="uc-title">데이터베이스 탐색</div>
+        <div class="uc-desc">데이터베이스 MCP 서버를 사용하여 연결된 SQLite 데이터베이스의 모든 테이블을 나열하고, 스키마와 컬럼 유형을 설명하며, SELECT 쿼리를 실행하여 데이터를 검사할 수 있습니다.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-03</div>
+        <div class="uc-title">파일 시스템 탐색</div>
+        <div class="uc-desc">파일 시스템 MCP 서버를 사용하여 샌드박스 디렉토리의 파일을 나열하고 파일 내용을 읽을 수 있습니다. 쓰기 및 삭제 작업에는 <span class="inline-code">ALLOW_WRITE=true</span>가 필요합니다.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-04</div>
+        <div class="uc-title">도구 호출 UI</div>
+        <div class="uc-desc">도구 페이지의 도구를 클릭하여 ToolInvoker 모달을 엽니다. 동적으로 렌더링된 폼에 매개변수를 입력하고 JSON 결과와 실행 시간을 인라인으로 확인할 수 있습니다.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-05</div>
+        <div class="uc-title">감사 추적 및 로깅</div>
+        <div class="uc-desc">모든 도구 호출이 ToolInvocations 테이블에 기록되며 전체 입력 매개변수, 결과 페이로드, 밀리초 단위 실행 시간, 성공/오류 상태와 함께 로그 페이지에 표시됩니다.</div>
+      </div>
+      <div class="uc-card">
+        <div class="uc-id">UC-06</div>
+        <div class="uc-title">다중 서버 관리</div>
+        <div class="uc-desc">서버 페이지에서 개별 MCP 서버를 시작하고 중지합니다. 실시간 상태 업데이트가 SignalR을 통해 푸시되므로 페이지 새로 고침 없이 UI가 현재 상태를 반영합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── API 엔드포인트 참조 ── -->
+  <div class="card">
+    <h2>&#128196; 백엔드 API 엔드포인트 (총 15개)</h2>
+    <p>.NET 백엔드는 15개의 REST 엔드포인트를 제공합니다. 모든 도구 호출은 결과를 영속화하고 MCP 서버에 프록시하는 백엔드를 통해 흐릅니다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>메서드</th><th>엔드포인트</th><th>목적</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/servers</span></td><td>등록된 모든 MCP 서버 목록 조회</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers</span></td><td>새 MCP 서버 등록</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/servers/{id}</span></td><td>ID로 특정 서버 조회</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers/{id}/start</span></td><td>서버 상태 확인 + 도구 동기화</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/servers/{id}/stop</span></td><td>서버를 오프라인으로 표시</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/tools</span></td><td>모든 서버의 동기화된 모든 도구 목록 조회</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/tools/{id}</span></td><td>특정 도구의 스키마 및 메타데이터 조회</td></tr>
+          <tr><td><span class="method-post">POST</span></td><td><span class="inline-code">/api/tools/{id}/invoke</span></td><td>매개변수로 도구 호출 — MCP 서버에 프록시</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/invocations</span></td><td>모든 도구 호출 레코드 목록 조회</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/invocations/{id}</span></td><td>특정 호출의 전체 세부 정보 조회</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/logs</span></td><td>모든 연결 및 이벤트 로그 목록 조회</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/api/logs/server/{id}</span></td><td>특정 서버에 범위가 지정된 로그 조회</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/health</span></td><td>백엔드 상태 확인 엔드포인트</td></tr>
+          <tr><td><span class="method-get">GET</span></td><td><span class="inline-code">/swagger</span></td><td>Swagger UI (개발 모드 전용)</td></tr>
+          <tr><td>WS</td><td><span class="inline-code">/hubs/status</span></td><td>실시간 서버 상태 업데이트를 위한 SignalR 허브</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       필수 설정
+       ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <h2>&#9881; 필수 설정</h2>
+    <p>MCP DevBridge를 실행하는 데 필요한 모든 환경 변수와 구성 값입니다. 해당 서비스를 시작하기 전에 설정해야 합니다.</p>
+
+    <!-- 개발 모드 -->
+    <div class="settings-card dev">
+      <h3>&#128187; 개발 모드 설정</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>설정</th><th>설정 위치</th><th>취득 방법 / 메모</th><th>필수 여부</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span> 또는 셸 환경</td>
+              <td>GitHub.com → 설정 → 개발자 설정 → 개인 액세스 토큰 → 토큰(클래식) → 새 토큰 생성. 범위: <strong>repo</strong>, <strong>read:user</strong></td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>쓰기/삭제를 차단하려면 <code>false</code>로 설정(기본값). 로컬 개발 중 <code>write_file</code> 또는 <code>delete_file</code>이 필요할 때만 <code>true</code>로 설정하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>파일 시스템 서버는 모든 파일 작업을 이 경로로 제한합니다. 기본값: <code>./sandbox</code>(mcp-servers 디렉토리 기준). 디렉토리가 없으면 생성하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">DB_PATH</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>데이터베이스 MCP 서버용 SQLite 파일 경로. 기본값: <code>./data/dev.db</code>. 최초 실행 시 EF Core에 의해 자동 생성됩니다.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td><span class="inline-code">frontend/.env.local</span></td>
+              <td>.NET 백엔드 API URL. 로컬 개발용: <code>http://localhost:5000</code>. Next.js 공개 환경 변수이므로 반드시 <code>NEXT_PUBLIC_</code> 접두사가 붙어야 합니다.</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>셸 환경 또는 <span class="inline-code">backend/launchSettings.json</span></td>
+              <td>Swagger UI, 상세 오류 페이지, 개발 모드 로깅을 활성화하려면 <code>Development</code>로 설정하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-title">&#9432; SQLite 자동 생성</div>
+        <p style="color:#bfdbfe; margin:0;">SQLite는 .NET 백엔드 최초 실행 시 Entity Framework Core에 의해 자동 생성됩니다. 개발 환경에서는 <code>dotnet ef database update</code>나 수동 SQL 스크립트가 필요하지 않습니다.</p>
+      </div>
+    </div>
+
+    <!-- 프로덕션 모드 -->
+    <div class="settings-card prod">
+      <h3>&#127758; 프로덕션 모드 설정 (무료 티어)</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>설정</th><th>설정 위치</th><th>취득 방법 / 메모</th><th>필수 여부</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td>호스팅 플랫폼 시크릿 / 환경 변수</td>
+              <td>개발과 동일한 무료 GitHub 개인 액세스 토큰. 만료 날짜를 설정하지 않으면 영구 유효합니다. 호스팅 플랫폼에 시크릿으로 저장하십시오.</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>호스팅 플랫폼 환경 변수</td>
+              <td><code>Production</code>으로 설정하십시오. Swagger UI 비활성화, 프로덕션 로깅 활성화, 상세 오류 메시지 숨김.</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td>Vercel / Netlify 환경 변수</td>
+              <td>배포된 백엔드 URL을 가리키도록 설정하십시오. 예: <code>https://your-backend.fly.dev</code>.</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td>호스팅 플랫폼 환경 변수</td>
+              <td>프로덕션에서는 <code>false</code>를 유지하도록 강력히 권장합니다.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td>호스팅 플랫폼 환경 변수 / Dockerfile</td>
+              <td>컨테이너 안전 경로로 설정하십시오: <code>/app/sandbox</code>.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td>데이터베이스 (PostgreSQL)</td>
+              <td>백엔드 환경의 연결 문자열</td>
+              <td>다중 인스턴스 프로덕션용: Supabase, Railway, 또는 Neon 무료 티어의 PostgreSQL 연결 문자열을 사용하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>무료 호스팅 옵션</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>컴포넌트</th><th>무료 플랫폼</th><th>메모</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Next.js 프론트엔드</td><td>Vercel Hobby 플랜</td><td>무료, Next.js에 최적화, GitHub에서 자동 CI/CD</td></tr>
+            <tr><td>Next.js 프론트엔드 (대안)</td><td>Netlify 무료 티어</td><td>월 100GB 대역폭 무료</td></tr>
+            <tr><td>백엔드 + MCP 컨테이너</td><td>Fly.io 무료 티어</td><td>공유 CPU VM 3개 무료; Docker Compose 지원</td></tr>
+            <tr><td>백엔드 + MCP 컨테이너 (대안)</td><td>Railway 무료 티어</td><td>월 $5 크레딧; 간편한 Docker 배포</td></tr>
+            <tr><td>풀 스택 (VPS)</td><td>Oracle Cloud Always Free</td><td>AMD VM 2개 영구 무료</td></tr>
+            <tr><td>풀 스택 (VPS 대안)</td><td>DigitalOcean Droplet</td><td>512MB RAM 드롭릿 월 $4</td></tr>
+            <tr><td>PostgreSQL</td><td>Supabase / Neon / Railway</td><td>모두 무료 PostgreSQL 티어 제공</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">&#10003; 단일 서버 프로덕션에서의 SQLite</div>
+        <p style="color:#bbf7d0; margin:0;">SQLite는 단일 서버 프로덕션 배포에 완벽하게 작동합니다. 여러 백엔드 인스턴스가 필요하거나 높은 동시 쓰기 처리량이 필요한 경우에만 PostgreSQL로 업그레이드하십시오.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</div><!-- /lang-ko -->
+
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('.lang-content').forEach(function(el) { el.style.display = 'none'; });
+    document.querySelectorAll('.lang-btn').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('lang-' + lang).style.display = 'block';
+    document.getElementById('btn-' + lang).classList.add('active');
+  }
+</script>
+</body>
+</html>

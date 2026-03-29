@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP DevBridge — Development Process &amp; Architecture</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── Language bar ── */
+    .lang-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      background: #0a1020;
+      border-bottom: 1px solid #1e293b;
+      backdrop-filter: blur(8px);
+    }
+    .lang-btn {
+      padding: 6px 18px;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .2s;
+    }
+    .lang-btn:hover { border-color: #6366f1; color: #e2e8f0; }
+    .lang-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+    /* ── Page wrapper ── */
+    .page { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 48px 24px 40px;
+      border-bottom: 1px solid #1e293b;
+      margin-bottom: 40px;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: #1e293b;
+      border: 1px solid #6366f1;
+      color: #818cf8;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .hero p { color: #94a3b8; font-size: 1rem; max-width: 640px; margin: 0 auto; }
+
+    /* ── Cards / sections ── */
+    .card {
+      background: #1e293b;
+      border: 1px solid #2d3f58;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #818cf8;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #2d3f58;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #c7d2fe;
+      margin: 20px 0 10px;
+    }
+    .card p { color: #cbd5e1; margin-bottom: 10px; }
+    .card ul, .card ol { padding-left: 20px; color: #cbd5e1; }
+    .card li { margin-bottom: 6px; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: #79c0ff;
+    }
+    pre code { color: #e6edf3; }
+    .inline-code {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+      color: #79c0ff;
+    }
+
+    /* ── Tables ── */
+    .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th {
+      background: #0f172a;
+      color: #818cf8;
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid #334155;
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    tr:nth-child(even) td { background: #1a2438; }
+    tr:hover td { background: #223044; }
+
+    /* ── Tier badges in tables ── */
+    .badge-req { color: #f87171; font-weight: 600; font-size: 12px; }
+    .badge-opt { color: #4ade80; font-weight: 600; font-size: 12px; }
+
+    /* ── Stat grid ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .stat-box {
+      background: #0f172a;
+      border: 1px solid #2d3f58;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-box .num { font-size: 1.8rem; font-weight: 700; color: #818cf8; }
+    .stat-box .lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+
+    /* ── Flow diagram ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 14px 0;
+    }
+    .flow-step {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .flow-arrow { color: #6366f1; font-size: 18px; font-weight: 700; }
+
+    /* ── Server cards ── */
+    .server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin: 16px 0; }
+    .server-card {
+      background: #0f172a;
+      border: 1px solid #2d3f58;
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .server-card .port { font-size: 11px; font-weight: 600; color: #6366f1; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .server-card .name { font-size: 1rem; font-weight: 700; color: #e2e8f0; margin-bottom: 10px; }
+    .server-card .tools-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tool-tag {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 5px;
+      padding: 3px 9px;
+      font-size: 11.5px;
+      color: #93c5fd;
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* ── Alert boxes ── */
+    .alert {
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      border-left: 4px solid;
+    }
+    .alert-info { background: #0c1f3f; border-color: #3b82f6; }
+    .alert-info .alert-title { color: #60a5fa; font-weight: 700; margin-bottom: 6px; }
+    .alert-warn { background: #1c1008; border-color: #f59e0b; }
+    .alert-warn .alert-title { color: #fbbf24; font-weight: 700; margin-bottom: 6px; }
+    .alert-success { background: #051a10; border-color: #22c55e; }
+    .alert-success .alert-title { color: #4ade80; font-weight: 700; margin-bottom: 6px; }
+
+    /* ── Settings section ── */
+    .settings-section { margin-top: 48px; }
+    .settings-section > h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #2d3f58;
+    }
+    .settings-section > p { color: #94a3b8; margin-bottom: 24px; }
+
+    .settings-card {
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      border: 1px solid;
+    }
+    .settings-card.dev {
+      background: #060e1f;
+      border-color: #1d4ed8;
+    }
+    .settings-card.prod {
+      background: #041409;
+      border-color: #166534;
+    }
+    .settings-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid;
+    }
+    .settings-card.dev h3 { color: #60a5fa; border-color: #1d4ed8; }
+    .settings-card.prod h3 { color: #4ade80; border-color: #166534; }
+  </style>
+</head>
+<body>
+
+<!-- Language switcher -->
+<div class="lang-bar">
+  <button onclick="switchLang('en')" id="btn-en" class="lang-btn active">&#127482;&#127480; English</button>
+  <button onclick="switchLang('uz')" id="btn-uz" class="lang-btn">&#127482;&#127487; O'zbek</button>
+  <button onclick="switchLang('ko')" id="btn-ko" class="lang-btn">&#127472;&#127479; &#54620;&#44397;&#50612;</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ENGLISH
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="lang-en" class="lang-content">
+<div class="page">
+
+  <div class="hero">
+    <div class="badge">Project Documentation</div>
+    <h1>MCP DevBridge</h1>
+    <p>Development Process &amp; Architecture — Universal Developer Tool Integration Platform</p>
+  </div>
+
+  <!-- ── Overview ── -->
+  <div class="card">
+    <h2>&#128200; Project Overview</h2>
+    <p>MCP DevBridge is a <strong>Universal Developer Tool Integration Platform</strong> built on the Model Context Protocol (MCP). It solves the real-world problem of fragmented, ad-hoc, unobservable, and insecure AI-to-tool integrations by providing a standardised, auditable gateway between AI frontends and backend developer tools (GitHub, databases, file systems).</p>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num">55</div><div class="lbl">Source Files</div></div>
+      <div class="stat-box"><div class="num">8,079</div><div class="lbl">Lines of Code</div></div>
+      <div class="stat-box"><div class="num">13</div><div class="lbl">MCP Tools</div></div>
+      <div class="stat-box"><div class="num">15</div><div class="lbl">API Endpoints</div></div>
+      <div class="stat-box"><div class="num">3</div><div class="lbl">MCP Servers</div></div>
+      <div class="stat-box"><div class="num">5</div><div class="lbl">Docker Services</div></div>
+    </div>
+    <h3>Problem Statement</h3>
+    <p>Before MCP DevBridge, developer tool integrations for AI workflows suffered from four core problems:</p>
+    <ul>
+      <li><strong>Fragmented</strong> — Every tool had its own bespoke integration, no standard protocol.</li>
+      <li><strong>Ad-hoc</strong> — No structured invocation model; calls were fire-and-forget with no metadata.</li>
+      <li><strong>Unobservable</strong> — No audit trail, no logging, no way to see what the AI called or when.</li>
+      <li><strong>Insecure</strong> — Write operations unguarded, file system access unrestricted.</li>
+    </ul>
+    <p>MCP DevBridge addresses all four by providing a JSON-RPC 2.0 based gateway with centralised logging, permission gating, and a polished management UI.</p>
+  </div>
+
+  <!-- ── Architecture ── -->
+  <div class="card">
+    <h2>&#127963; 3-Tier Architecture</h2>
+    <p>The platform is composed of three clearly separated tiers, each with a dedicated responsibility:</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Tier</th><th>Technology</th><th>Port</th><th>Responsibility</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Frontend</td><td>Next.js 14 (React, TypeScript)</td><td>3000</td><td>Management UI — servers, tools, logs, invocations</td></tr>
+          <tr><td>API Gateway</td><td>.NET 8 (C#, ASP.NET Core)</td><td>5000</td><td>REST API, DB persistence, health checks, JSON-RPC proxy</td></tr>
+          <tr><td>MCP Servers</td><td>TypeScript (Node.js)</td><td>3001–3003</td><td>Tool execution — GitHub, Database, FileSystem</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Request Flow</h3>
+    <div class="flow">
+      <div class="flow-step">Next.js Frontend</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">REST API</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">.NET Gateway</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">JSON-RPC 2.0</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">MCP Server</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">External Service</div>
+      <div class="flow-arrow">&#8592;</div>
+      <div class="flow-step">Result returned</div>
+    </div>
+
+    <h3>Technology Stack</h3>
+    <ul>
+      <li><strong>TypeScript MCP Servers</strong> — Node.js, Express, ts-node, Zod for schema validation</li>
+      <li><strong>C# / .NET 8</strong> — ASP.NET Core Web API, Entity Framework Core, SignalR</li>
+      <li><strong>Next.js 14</strong> — React 18, Tailwind CSS, SWR for data fetching</li>
+      <li><strong>Database</strong> — SQLite (EF Core, auto-created on first run)</li>
+      <li><strong>Real-time</strong> — SignalR for live health status updates</li>
+      <li><strong>Container</strong> — Docker Compose with 5 services</li>
+    </ul>
+  </div>
+
+  <!-- ── MCP Servers ── -->
+  <div class="card">
+    <h2>&#9881; MCP Servers (13 Tools Total)</h2>
+    <p>All three MCP servers expose tools over both a convenience REST endpoint (<span class="inline-code">POST /tools/:name</span>) and the canonical JSON-RPC 2.0 endpoint (<span class="inline-code">POST /rpc</span>). Each server also exposes <span class="inline-code">GET /health</span> and <span class="inline-code">GET /info</span>.</p>
+
+    <div class="server-grid">
+      <div class="server-card">
+        <div class="port">Port 3001</div>
+        <div class="name">GitHub MCP Server</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_repos</span>
+          <span class="tool-tag">get_repo</span>
+          <span class="tool-tag">list_issues</span>
+          <span class="tool-tag">create_issue</span>
+          <span class="tool-tag">get_commits</span>
+        </div>
+      </div>
+      <div class="server-card">
+        <div class="port">Port 3002</div>
+        <div class="name">Database MCP Server</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_tables</span>
+          <span class="tool-tag">describe_table</span>
+          <span class="tool-tag">execute_query</span>
+          <span class="tool-tag">insert_record</span>
+        </div>
+      </div>
+      <div class="server-card">
+        <div class="port">Port 3003</div>
+        <div class="name">FileSystem MCP Server</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_files</span>
+          <span class="tool-tag">read_file</span>
+          <span class="tool-tag">write_file</span>
+          <span class="tool-tag">delete_file</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>JSON-RPC 2.0 Protocol</h3>
+    <p>All tool invocations follow the JSON-RPC 2.0 specification over <span class="inline-code">HTTP POST /rpc</span>:</p>
+    <pre><code>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "list_repos",
+    "arguments": { "owner": "microsoft" }
+  }
+}</code></pre>
+  </div>
+
+  <!-- ── Database Schema ── -->
+  <div class="card">
+    <h2>&#128451; Database Schema</h2>
+    <p>SQLite is used as the persistence layer, managed by Entity Framework Core. The database is auto-created on first run — no manual migration steps required.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Table</th><th>Purpose</th><th>Key Columns</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="inline-code">McpServers</span></td><td>Registered MCP server instances</td><td>Id, Name, BaseUrl, Status, LastHealthCheck</td></tr>
+          <tr><td><span class="inline-code">Tools</span></td><td>Tools synced from MCP servers</td><td>Id, ServerId, Name, Description, InputSchema</td></tr>
+          <tr><td><span class="inline-code">ToolInvocations</span></td><td>Audit log of all tool calls</td><td>Id, ToolId, Parameters, Result, Duration, Status, Timestamp</td></tr>
+          <tr><td><span class="inline-code">ConnectionLogs</span></td><td>Server health/connection events</td><td>Id, ServerId, EventType, Message, Timestamp</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Security ── -->
+  <div class="card">
+    <h2>&#128274; Security Model</h2>
+    <p>MCP DevBridge uses environment-variable-based permission gating rather than a complex auth system, keeping the security model transparent and auditable.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Control</th><th>Mechanism</th><th>Default</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Write operations (FileSystem)</td><td><span class="inline-code">ALLOW_WRITE</span> env var</td><td><span class="inline-code">false</span> — safe by default</td></tr>
+          <tr><td>File system path restriction</td><td><span class="inline-code">SANDBOX_DIR</span> env var</td><td><span class="inline-code">./sandbox</span> relative to mcp-servers dir</td></tr>
+          <tr><td>GitHub API access</td><td><span class="inline-code">GITHUB_TOKEN</span> env var</td><td>Required — no token, no GitHub calls</td></tr>
+          <tr><td>Database access</td><td>SQLite file path via <span class="inline-code">DB_PATH</span></td><td><span class="inline-code">./data/dev.db</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="alert alert-warn">
+      <div class="alert-title">&#9888; Write Access Warning</div>
+      <p style="color:#fde68a; margin:0;">Never set <span class="inline-code">ALLOW_WRITE=true</span> in production unless you have a specific reason. The default <span class="inline-code">false</span> prevents any write or delete operations on the file system, even if an AI model attempts to invoke them.</p>
+    </div>
+  </div>
+
+  <!-- ── Docker ── -->
+  <div class="card">
+    <h2>&#127758; Docker Architecture</h2>
+    <p>The full platform ships as a 5-service Docker Compose stack. All services are on an internal <span class="inline-code">mcp-network</span> bridge network. Only the frontend (3000), backend (5000), and the three MCP servers (3001–3003) are exposed to the host.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Service</th><th>Image / Build</th><th>Host Port</th><th>Depends On</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="inline-code">frontend</span></td><td>Dockerfile in /frontend</td><td>3000</td><td>backend</td></tr>
+          <tr><td><span class="inline-code">backend</span></td><td>Dockerfile in /backend</td><td>5000</td><td>mcp-github, mcp-database, mcp-filesystem</td></tr>
+          <tr><td><span class="inline-code">mcp-github</span></td><td>Dockerfile in /mcp-servers</td><td>3001</td><td>—</td></tr>
+          <tr><td><span class="inline-code">mcp-database</span></td><td>Dockerfile in /mcp-servers</td><td>3002</td><td>—</td></tr>
+          <tr><td><span class="inline-code">mcp-filesystem</span></td><td>Dockerfile in /mcp-servers</td><td>3003</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Quick Start</h3>
+    <pre><code>cd project-1-mcp-devbridge
+docker compose up --build</code></pre>
+    <p>The first run seeds all 3 MCP servers into the database automatically.</p>
+  </div>
+
+  <!-- ── Start Order ── -->
+  <div class="card">
+    <h2>&#9654; Local Start Order</h2>
+    <p>When running locally without Docker, services must be started in dependency order:</p>
+
+    <ol>
+      <li>
+        <strong>Step 1 — MCP Servers</strong> (all three in parallel)
+        <pre><code>cd mcp-servers &amp;&amp; npm install &amp;&amp; npm start</code></pre>
+        <p>Starts all 3 servers on ports 3001, 3002, 3003.</p>
+      </li>
+      <li>
+        <strong>Step 2 — .NET API Gateway</strong>
+        <pre><code>cd backend/McpGateway &amp;&amp; dotnet run</code></pre>
+        <p>Starts on port 5000. Seeds the database, begins health-checking MCP servers.</p>
+      </li>
+      <li>
+        <strong>Step 3 — Next.js Frontend</strong>
+        <pre><code>cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</code></pre>
+        <p>Starts on port 3000 (or next available). Connects to backend at <span class="inline-code">NEXT_PUBLIC_API_URL</span>.</p>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       REQUIRED SETTINGS
+       ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <h2>&#9881; Required Settings</h2>
+    <p>All environment variables and configuration values needed to run MCP DevBridge. These must be set before starting the respective service.</p>
+
+    <!-- Dev Mode -->
+    <div class="settings-card dev">
+      <h3>&#128187; Development Mode Settings</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Setting</th><th>Where to Set</th><th>How to Get / Notes</th><th>Required?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span> or shell env</td>
+              <td>GitHub.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token. Select scopes: <strong>repo</strong>, <strong>read:user</strong></td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>Set to <code>false</code> (default) to block write/delete. Set to <code>true</code> only when you need <code>write_file</code> or <code>delete_file</code> during local development.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>FileSystem server restricts all file operations to this path. Default: <code>./sandbox</code> (relative to mcp-servers directory). Create the directory if it does not exist.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">DB_PATH</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>SQLite database file path for the Database MCP Server. Default: <code>./data/dev.db</code>. The file and directory are auto-created by EF Core on first run.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td><span class="inline-code">frontend/.env.local</span></td>
+              <td>URL of the .NET backend API. For local dev: <code>http://localhost:5000</code>. This is a Next.js public env var — must be prefixed with <code>NEXT_PUBLIC_</code>.</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Shell env or <span class="inline-code">backend/launchSettings.json</span></td>
+              <td>Set to <code>Development</code> to enable Swagger UI, detailed error pages, and development-mode logging.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-title">&#9432; SQLite Auto-Creation</div>
+        <p style="color:#bfdbfe; margin:0;">SQLite is auto-created by Entity Framework Core on the first run of the .NET backend. No <code>dotnet ef database update</code> or manual SQL scripts are needed in development.</p>
+      </div>
+    </div>
+
+    <!-- Production Mode -->
+    <div class="settings-card prod">
+      <h3>&#127758; Production Mode Settings (Free Tier)</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Setting</th><th>Where to Set</th><th>How to Get / Notes</th><th>Required?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td>Hosting platform secrets / env vars</td>
+              <td>Same free GitHub Personal Access Token as dev. Never expires unless you set an expiration date. Store as a secret in your hosting platform (Fly.io secrets, Railway env vars, etc.).</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Hosting platform env vars</td>
+              <td>Set to <code>Production</code>. Disables Swagger UI, enables production logging, hides detailed error messages from end users.</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td>Vercel / Netlify env vars</td>
+              <td>Point to your deployed backend URL, e.g. <code>https://your-backend.fly.dev</code>. Set this in the Vercel dashboard under Project → Settings → Environment Variables.</td>
+              <td><span class="badge-req">REQUIRED</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td>Hosting platform env vars</td>
+              <td>Strongly recommended to keep as <code>false</code> in production. Only set to <code>true</code> if your use case explicitly requires remote file writes.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td>Hosting platform env vars / Dockerfile</td>
+              <td>Set to a container-safe path: <code>/app/sandbox</code>. Ensure this directory exists inside the container image or is created by the entrypoint script.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+            <tr>
+              <td>Database (PostgreSQL)</td>
+              <td>Connection string in backend env</td>
+              <td>For multi-instance production: Supabase free tier, Railway free tier, or Neon free tier all provide a free PostgreSQL connection string. Replace SQLite connection in <code>appsettings.Production.json</code>.</td>
+              <td><span class="badge-opt">OPTIONAL</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Free Hosting Options</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Free Platform</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Next.js Frontend</td><td>Vercel Hobby Plan</td><td>Free, optimised for Next.js, automatic CI/CD from GitHub</td></tr>
+            <tr><td>Next.js Frontend (alt)</td><td>Netlify Free Tier</td><td>100 GB bandwidth/month free</td></tr>
+            <tr><td>Backend + MCP containers</td><td>Fly.io Free Tier</td><td>3 shared-CPU VMs free; supports Docker Compose via <code>fly launch</code></td></tr>
+            <tr><td>Backend + MCP containers (alt)</td><td>Railway Free Tier</td><td>$5 credit/month; easy Docker deploy</td></tr>
+            <tr><td>Full stack (VPS)</td><td>Oracle Cloud Always Free</td><td>2 AMD VMs always free; run full Docker Compose stack</td></tr>
+            <tr><td>Full stack (VPS alt)</td><td>DigitalOcean Droplet</td><td>$4/month for 512 MB RAM droplet</td></tr>
+            <tr><td>PostgreSQL</td><td>Supabase / Neon / Railway</td><td>All offer free PostgreSQL tiers with connection string</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">&#10003; SQLite in Single-Server Production</div>
+        <p style="color:#bbf7d0; margin:0;">SQLite works perfectly for single-server production deployments. Only upgrade to PostgreSQL if you need multiple backend instances or require concurrent write throughput beyond what SQLite handles.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</div><!-- /lang-en -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     O'ZBEK
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="lang-uz" class="lang-content" style="display:none">
+<div class="page">
+
+  <div class="hero">
+    <div class="badge">Loyiha Hujjatlari</div>
+    <h1>MCP DevBridge</h1>
+    <p>Ishlab chiqish jarayoni va Arxitektura — Universal Dasturchi Vositalarini Integratsiya Platformasi</p>
+  </div>
+
+  <!-- ── Umumiy ma'lumot ── -->
+  <div class="card">
+    <h2>&#128200; Loyiha Tavsifi</h2>
+    <p>MCP DevBridge — Model Context Protocol (MCP) asosida qurilgan <strong>Universal Dasturchi Vositalarini Integratsiya Platformasi</strong>. U AI va dasturchi vositalari (GitHub, ma'lumotlar bazasi, fayl tizimi) o'rtasidagi tarqoq, tartibsiz, kuzatib bo'lmaydigan va xavfli integratsiyalar muammosini standartlashtirilgan, nazorat qilinadigan shlyuz orqali hal qiladi.</p>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num">55</div><div class="lbl">Manba fayllari</div></div>
+      <div class="stat-box"><div class="num">8,079</div><div class="lbl">Kod satrlari</div></div>
+      <div class="stat-box"><div class="num">13</div><div class="lbl">MCP vositalari</div></div>
+      <div class="stat-box"><div class="num">15</div><div class="lbl">API endpointlar</div></div>
+      <div class="stat-box"><div class="num">3</div><div class="lbl">MCP serverlar</div></div>
+      <div class="stat-box"><div class="num">5</div><div class="lbl">Docker xizmatlari</div></div>
+    </div>
+    <h3>Muammo Tavsifi</h3>
+    <p>MCP DevBridge dan oldin AI ish oqimlari uchun dasturchi vositalarini integratsiyasida to'rtta asosiy muammo mavjud edi:</p>
+    <ul>
+      <li><strong>Tarqoq</strong> — Har bir vosita o'ziga xos integratsiyaga ega edi, standart protokol yo'q edi.</li>
+      <li><strong>Tartibsiz</strong> — Tuzilgan chaqiruv modeli yo'q; chaqiruvlar metama'lumotsiz amalga oshirilardi.</li>
+      <li><strong>Kuzatib bo'lmaydigan</strong> — Tekshirish izi, jurnal yozuvlari, AI nima chaqirganini ko'rish imkoniyati yo'q edi.</li>
+      <li><strong>Xavfli</strong> — Yozish operatsiyalari himoyasiz, fayl tizimiga kirish cheklanmagan edi.</li>
+    </ul>
+    <p>MCP DevBridge markazlashtirilgan jurnal yozish, ruxsat nazorati va mukammal boshqaruv interfeysi bilan barcha to'rtta muammoni hal qiladi.</p>
+  </div>
+
+  <!-- ── Arxitektura ── -->
+  <div class="card">
+    <h2>&#127963; 3 Qatlamli Arxitektura</h2>
+    <p>Platforma aniq ajratilgan uchta qatlamdan iborat, har biri o'ziga xos vazifaga ega:</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Qatlam</th><th>Texnologiya</th><th>Port</th><th>Vazifa</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Frontend</td><td>Next.js 14 (React, TypeScript)</td><td>3000</td><td>Boshqaruv interfeysi — serverlar, vositalar, jurналlar, chaqiruvlar</td></tr>
+          <tr><td>API Shlyuz</td><td>.NET 8 (C#, ASP.NET Core)</td><td>5000</td><td>REST API, DB saqlash, sog'liq tekshiruvi, JSON-RPC proksi</td></tr>
+          <tr><td>MCP Serverlar</td><td>TypeScript (Node.js)</td><td>3001–3003</td><td>Vosita bajarish — GitHub, Ma'lumotlar bazasi, Fayl tizimi</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>So'rov Oqimi</h3>
+    <div class="flow">
+      <div class="flow-step">Next.js Frontend</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">REST API</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">.NET Shlyuz</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">JSON-RPC 2.0</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">MCP Server</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">Tashqi xizmat</div>
+      <div class="flow-arrow">&#8592;</div>
+      <div class="flow-step">Natija qaytadi</div>
+    </div>
+
+    <h3>Texnologiya To'plami</h3>
+    <ul>
+      <li><strong>TypeScript MCP Serverlar</strong> — Node.js, Express, ts-node, Zod schema validatsiyasi</li>
+      <li><strong>C# / .NET 8</strong> — ASP.NET Core Web API, Entity Framework Core, SignalR</li>
+      <li><strong>Next.js 14</strong> — React 18, Tailwind CSS, SWR ma'lumot olish uchun</li>
+      <li><strong>Ma'lumotlar bazasi</strong> — SQLite (EF Core, birinchi ishga tushirishda avtomatik yaratiladi)</li>
+      <li><strong>Real vaqt</strong> — SignalR jonli sog'liq holati yangilanishlari uchun</li>
+      <li><strong>Konteyner</strong> — 5 xizmatli Docker Compose</li>
+    </ul>
+  </div>
+
+  <!-- ── MCP Serverlar ── -->
+  <div class="card">
+    <h2>&#9881; MCP Serverlar (Jami 13 Vosita)</h2>
+    <p>Barcha uchta MCP server vositalarni qulay REST endpoint (<span class="inline-code">POST /tools/:name</span>) va kanonik JSON-RPC 2.0 endpoint (<span class="inline-code">POST /rpc</span>) orqali ochib beradi. Har bir server <span class="inline-code">GET /health</span> va <span class="inline-code">GET /info</span> endpointlarini ham taqdim etadi.</p>
+
+    <div class="server-grid">
+      <div class="server-card">
+        <div class="port">Port 3001</div>
+        <div class="name">GitHub MCP Server</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_repos</span>
+          <span class="tool-tag">get_repo</span>
+          <span class="tool-tag">list_issues</span>
+          <span class="tool-tag">create_issue</span>
+          <span class="tool-tag">get_commits</span>
+        </div>
+      </div>
+      <div class="server-card">
+        <div class="port">Port 3002</div>
+        <div class="name">Database MCP Server</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_tables</span>
+          <span class="tool-tag">describe_table</span>
+          <span class="tool-tag">execute_query</span>
+          <span class="tool-tag">insert_record</span>
+        </div>
+      </div>
+      <div class="server-card">
+        <div class="port">Port 3003</div>
+        <div class="name">FileSystem MCP Server</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_files</span>
+          <span class="tool-tag">read_file</span>
+          <span class="tool-tag">write_file</span>
+          <span class="tool-tag">delete_file</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>JSON-RPC 2.0 Protokoli</h3>
+    <p>Barcha vosita chaqiruvlari <span class="inline-code">HTTP POST /rpc</span> orqali JSON-RPC 2.0 spetsifikatsiyasiga amal qiladi:</p>
+    <pre><code>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "list_repos",
+    "arguments": { "owner": "microsoft" }
+  }
+}</code></pre>
+  </div>
+
+  <!-- ── Ma'lumotlar bazasi sxemasi ── -->
+  <div class="card">
+    <h2>&#128451; Ma'lumotlar Bazasi Sxemasi</h2>
+    <p>SQLite Entity Framework Core tomonidan boshqariladigan saqlash qatlami sifatida ishlatiladi. Ma'lumotlar bazasi birinchi ishga tushirishda avtomatik yaratiladi — qo'lda migratsiya qadamlari talab qilinmaydi.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Jadval</th><th>Maqsad</th><th>Asosiy ustunlar</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="inline-code">McpServers</span></td><td>Ro'yxatga olingan MCP server namunalari</td><td>Id, Name, BaseUrl, Status, LastHealthCheck</td></tr>
+          <tr><td><span class="inline-code">Tools</span></td><td>MCP serverlardan sinxronlashtirilgan vositalar</td><td>Id, ServerId, Name, Description, InputSchema</td></tr>
+          <tr><td><span class="inline-code">ToolInvocations</span></td><td>Barcha vosita chaqiruvlarining tekshirish jurnali</td><td>Id, ToolId, Parameters, Result, Duration, Status, Timestamp</td></tr>
+          <tr><td><span class="inline-code">ConnectionLogs</span></td><td>Server sog'lig'i/ulanish hodisalari</td><td>Id, ServerId, EventType, Message, Timestamp</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Xavfsizlik ── -->
+  <div class="card">
+    <h2>&#128274; Xavfsizlik Modeli</h2>
+    <p>MCP DevBridge murakkab autentifikatsiya tizimi o'rniga muhit o'zgaruvchilariga asoslangan ruxsat nazoratidan foydalanadi, bu xavfsizlik modelini shaffof va tekshiriladigan qiladi.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Nazorat</th><th>Mexanizm</th><th>Standart</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Yozish operatsiyalari (FileSystem)</td><td><span class="inline-code">ALLOW_WRITE</span> muhit o'zgaruvchisi</td><td><span class="inline-code">false</span> — standart xavfsiz</td></tr>
+          <tr><td>Fayl tizimi yo'li cheklovi</td><td><span class="inline-code">SANDBOX_DIR</span> muhit o'zgaruvchisi</td><td><span class="inline-code">./sandbox</span> mcp-servers katalogiga nisbatan</td></tr>
+          <tr><td>GitHub API kirish</td><td><span class="inline-code">GITHUB_TOKEN</span> muhit o'zgaruvchisi</td><td>Talab qilinadi — token yo'q, GitHub chaqiruvlari yo'q</td></tr>
+          <tr><td>Ma'lumotlar bazasiga kirish</td><td>SQLite fayl yo'li <span class="inline-code">DB_PATH</span> orqali</td><td><span class="inline-code">./data/dev.db</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="alert alert-warn">
+      <div class="alert-title">&#9888; Yozish Kirishi Haqida Ogohlantirish</div>
+      <p style="color:#fde68a; margin:0;">Ishlab chiqarish muhitida <span class="inline-code">ALLOW_WRITE=true</span> ni hech qachon o'rnatmang, agar buning uchun aniq sabab bo'lmasa. Standart <span class="inline-code">false</span> qiymati fayl tizimida barcha yozish va o'chirish operatsiyalarini bloklaydi, hatto AI modeli ularni chaqirishga urinsa ham.</p>
+    </div>
+  </div>
+
+  <!-- ── Docker ── -->
+  <div class="card">
+    <h2>&#127758; Docker Arxitekturasi</h2>
+    <p>To'liq platforma 5 xizmatli Docker Compose to'plami sifatida keladi. Barcha xizmatlar ichki <span class="inline-code">mcp-network</span> ko'prik tarmog'ida joylashgan. Faqat frontend (3000), backend (5000) va uchta MCP server (3001–3003) xostga ochiladi.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Xizmat</th><th>Tasvir / Build</th><th>Xost Port</th><th>Bog'liqlik</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="inline-code">frontend</span></td><td>/frontend dagi Dockerfile</td><td>3000</td><td>backend</td></tr>
+          <tr><td><span class="inline-code">backend</span></td><td>/backend dagi Dockerfile</td><td>5000</td><td>mcp-github, mcp-database, mcp-filesystem</td></tr>
+          <tr><td><span class="inline-code">mcp-github</span></td><td>/mcp-servers dagi Dockerfile</td><td>3001</td><td>—</td></tr>
+          <tr><td><span class="inline-code">mcp-database</span></td><td>/mcp-servers dagi Dockerfile</td><td>3002</td><td>—</td></tr>
+          <tr><td><span class="inline-code">mcp-filesystem</span></td><td>/mcp-servers dagi Dockerfile</td><td>3003</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Tezkor Ishga Tushirish</h3>
+    <pre><code>cd project-1-mcp-devbridge
+docker compose up --build</code></pre>
+    <p>Birinchi ishga tushirishda barcha 3 MCP server avtomatik ravishda ma'lumotlar bazasiga joylashtiriladi.</p>
+  </div>
+
+  <!-- ── Ishga tushirish tartibi ── -->
+  <div class="card">
+    <h2>&#9654; Mahalliy Ishga Tushirish Tartibi</h2>
+    <p>Dockersiz mahalliy ravishda ishlaganda xizmatlar bog'liqlik tartibida ishga tushirilishi kerak:</p>
+
+    <ol>
+      <li>
+        <strong>1-qadam — MCP Serverlar</strong> (uchtalasi parallel)
+        <pre><code>cd mcp-servers &amp;&amp; npm install &amp;&amp; npm start</code></pre>
+        <p>Barcha 3 serverni 3001, 3002, 3003 portlarida ishga tushiradi.</p>
+      </li>
+      <li>
+        <strong>2-qadam — .NET API Shlyuzi</strong>
+        <pre><code>cd backend/McpGateway &amp;&amp; dotnet run</code></pre>
+        <p>5000 portida ishga tushadi. Ma'lumotlar bazasini to'ldiradi, MCP serverlarni sog'liq jihatidan tekshirishni boshlaydi.</p>
+      </li>
+      <li>
+        <strong>3-qadam — Next.js Frontend</strong>
+        <pre><code>cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</code></pre>
+        <p>3000 portida ishga tushadi (yoki keyingi mavjud). <span class="inline-code">NEXT_PUBLIC_API_URL</span> orqali backendga ulanadi.</p>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TALAB QILINADIGAN SOZLAMALAR
+       ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <h2>&#9881; Talab Qilinadigan Sozlamalar</h2>
+    <p>MCP DevBridge ni ishga tushirish uchun zarur bo'lgan barcha muhit o'zgaruvchilari va konfiguratsiya qiymatlari. Ular tegishli xizmat ishga tushirilishidan oldin o'rnatilishi kerak.</p>
+
+    <!-- Ishlab chiqish rejimi -->
+    <div class="settings-card dev">
+      <h3>&#128187; Ishlab Chiqish Rejimi Sozlamalari</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Sozlama</th><th>Qayerda o'rnatiladi</th><th>Qanday olish / Izohlar</th><th>Talab qilinadimi?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span> yoki shell env</td>
+              <td>GitHub.com → Sozlamalar → Dasturchi sozlamalari → Shaxsiy kirish tokenlari → Tokenlar (klassik) → Yangi token yaratish. Qamrovlar: <strong>repo</strong>, <strong>read:user</strong></td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>Yozish/o'chirishni bloklash uchun <code>false</code> ga o'rnating (standart). Mahalliy ishlab chiqish paytida <code>write_file</code> yoki <code>delete_file</code> kerak bo'lganda <code>true</code> ga o'rnating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>FileSystem server barcha fayl operatsiyalarini ushbu yo'lga cheklaydi. Standart: <code>./sandbox</code> (mcp-servers katalogiga nisbatan). Katalog mavjud bo'lmasa yarating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">DB_PATH</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>Database MCP Server uchun SQLite ma'lumotlar bazasi fayl yo'li. Standart: <code>./data/dev.db</code>. Fayl va katalog birinchi ishga tushirishda EF Core tomonidan avtomatik yaratiladi.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td><span class="inline-code">frontend/.env.local</span></td>
+              <td>.NET backend API URL manzili. Mahalliy ishlab chiqish uchun: <code>http://localhost:5000</code>. Bu Next.js ommaviy muhit o'zgaruvchisi — <code>NEXT_PUBLIC_</code> bilan boshlanishi shart.</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Shell env yoki <span class="inline-code">backend/launchSettings.json</span></td>
+              <td>Swagger UI, batafsil xato sahifalari va ishlab chiqish rejimida jurnallarni yoqish uchun <code>Development</code> ga o'rnating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-title">&#9432; SQLite Avtomatik Yaratilishi</div>
+        <p style="color:#bfdbfe; margin:0;">SQLite .NET backend birinchi marta ishga tushganda Entity Framework Core tomonidan avtomatik yaratiladi. Ishlab chiqishda <code>dotnet ef database update</code> yoki qo'lda SQL skriptlari talab qilinmaydi.</p>
+      </div>
+    </div>
+
+    <!-- Ishlab chiqarish rejimi -->
+    <div class="settings-card prod">
+      <h3>&#127758; Ishlab Chiqarish Rejimi Sozlamalari (Bepul Tarif)</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Sozlama</th><th>Qayerda o'rnatiladi</th><th>Qanday olish / Izohlar</th><th>Talab qilinadimi?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td>Hosting platformasi maxfiy ma'lumotlari / muhit o'zgaruvchilari</td>
+              <td>Ishlab chiqish bilan bir xil bepul GitHub Shaxsiy Kirish Tokeni. Muddati belgilanmagan bo'lsa hech qachon tugamaydi. Hosting platformangizda maxfiy ma'lumot sifatida saqlang (Fly.io maxfiy ma'lumotlari, Railway muhit o'zgaruvchilari va h.k.).</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>Hosting platformasi muhit o'zgaruvchilari</td>
+              <td><code>Production</code> ga o'rnating. Swagger UI ni o'chiradi, ishlab chiqarish jurналlarini yoqadi, foydalanuvchilardan batafsil xato xabarlarini yashiradi.</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td>Vercel / Netlify muhit o'zgaruvchilari</td>
+              <td>Joylashtirilgan backend URL manziliga yo'naltiring, masalan: <code>https://your-backend.fly.dev</code>. Vercel boshqaruv panelidagi Loyiha → Sozlamalar → Muhit O'zgaruvchilari bo'limida o'rnating.</td>
+              <td><span class="badge-req">TALAB QILINADI</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td>Hosting platformasi muhit o'zgaruvchilari</td>
+              <td>Ishlab chiqarishda <code>false</code> qiymatida qoldirishni qat'iy tavsiya qilamiz. Faqat foydalanish holatingiz aniq ravishda masofaviy fayl yozishni talab qilsa <code>true</code> ga o'rnating.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td>Hosting platformasi muhit o'zgaruvchilari / Dockerfile</td>
+              <td>Konteyner uchun xavfsiz yo'lga o'rnating: <code>/app/sandbox</code>. Bu katalog konteyner tasvirida mavjud bo'lishini yoki kirish skripti tomonidan yaratilishini ta'minlang.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+            <tr>
+              <td>Ma'lumotlar bazasi (PostgreSQL)</td>
+              <td>Backend muhitidagi ulanish qatori</td>
+              <td>Ko'p namunali ishlab chiqarish uchun: Supabase bepul tarifi, Railway bepul tarifi yoki Neon bepul tarifi — barchasi bepul PostgreSQL ulanish qatorini taqdim etadi. <code>appsettings.Production.json</code> dagi SQLite ulanishini almashtiring.</td>
+              <td><span class="badge-opt">IXTIYORIY</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Bepul Hosting Variantlari</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Komponent</th><th>Bepul platforma</th><th>Izohlar</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Next.js Frontend</td><td>Vercel Hobby rejimi</td><td>Bepul, Next.js uchun optimallashtirilgan, GitHub'dan avtomatik CI/CD</td></tr>
+            <tr><td>Next.js Frontend (muqobil)</td><td>Netlify bepul tarifi</td><td>Oyiga 100 GB o'tkazish qobiliyati bepul</td></tr>
+            <tr><td>Backend + MCP konteynerlari</td><td>Fly.io bepul tarifi</td><td>3 ta umumiy CPU VM bepul; <code>fly launch</code> orqali Docker Compose qo'llab-quvvatlanadi</td></tr>
+            <tr><td>Backend + MCP konteynerlari (muqobil)</td><td>Railway bepul tarifi</td><td>Oyiga $5 kredit; oson Docker joylashtirish</td></tr>
+            <tr><td>To'liq stek (VPS)</td><td>Oracle Cloud Always Free</td><td>2 ta AMD VM doimo bepul; to'liq Docker Compose stekini ishlatish</td></tr>
+            <tr><td>To'liq stek (VPS muqobil)</td><td>DigitalOcean Droplet</td><td>512 MB RAM droplet uchun oyiga $4</td></tr>
+            <tr><td>PostgreSQL</td><td>Supabase / Neon / Railway</td><td>Barchasi ulanish qatori bilan bepul PostgreSQL tarifi taklif qiladi</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">&#10003; Bitta Serverli Ishlab Chiqarishda SQLite</div>
+        <p style="color:#bbf7d0; margin:0;">SQLite bitta serverli ishlab chiqarish joylashtirmasi uchun mukammal ishlaydi. Faqat bir nechta backend namunasi kerak bo'lganda yoki SQLite boshqara oladiganidan yuqori parallel yozish o'tkazish qobiliyatini talab qilganingizda PostgreSQL ga o'ting.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</div><!-- /lang-uz -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     한국어
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="lang-ko" class="lang-content" style="display:none">
+<div class="page">
+
+  <div class="hero">
+    <div class="badge">프로젝트 문서</div>
+    <h1>MCP DevBridge</h1>
+    <p>개발 프로세스 및 아키텍처 — 범용 개발자 도구 통합 플랫폼</p>
+  </div>
+
+  <!-- ── 프로젝트 개요 ── -->
+  <div class="card">
+    <h2>&#128200; 프로젝트 개요</h2>
+    <p>MCP DevBridge는 Model Context Protocol(MCP)을 기반으로 구축된 <strong>범용 개발자 도구 통합 플랫폼</strong>입니다. AI 프론트엔드와 백엔드 개발자 도구(GitHub, 데이터베이스, 파일 시스템) 사이의 단편적이고, 비체계적이며, 관찰 불가능하고, 보안이 취약한 통합 문제를 표준화되고 감사 가능한 게이트웨이를 통해 해결합니다.</p>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num">55</div><div class="lbl">소스 파일</div></div>
+      <div class="stat-box"><div class="num">8,079</div><div class="lbl">코드 라인</div></div>
+      <div class="stat-box"><div class="num">13</div><div class="lbl">MCP 도구</div></div>
+      <div class="stat-box"><div class="num">15</div><div class="lbl">API 엔드포인트</div></div>
+      <div class="stat-box"><div class="num">3</div><div class="lbl">MCP 서버</div></div>
+      <div class="stat-box"><div class="num">5</div><div class="lbl">Docker 서비스</div></div>
+    </div>
+    <h3>문제 정의</h3>
+    <p>MCP DevBridge 이전에는 AI 워크플로우를 위한 개발자 도구 통합에 네 가지 핵심 문제가 있었습니다:</p>
+    <ul>
+      <li><strong>단편적</strong> — 각 도구마다 별도의 맞춤형 통합이 있었으며, 표준 프로토콜이 없었습니다.</li>
+      <li><strong>비체계적</strong> — 구조화된 호출 모델이 없었고, 호출은 메타데이터 없이 단발성으로 이루어졌습니다.</li>
+      <li><strong>관찰 불가능</strong> — 감사 추적, 로깅, AI가 무엇을 언제 호출했는지 확인할 방법이 없었습니다.</li>
+      <li><strong>보안 취약</strong> — 쓰기 작업이 보호되지 않았고, 파일 시스템 접근이 제한되지 않았습니다.</li>
+    </ul>
+    <p>MCP DevBridge는 중앙화된 로깅, 권한 게이팅, 세련된 관리 UI를 통해 이 네 가지 문제를 모두 해결합니다.</p>
+  </div>
+
+  <!-- ── 아키텍처 ── -->
+  <div class="card">
+    <h2>&#127963; 3계층 아키텍처</h2>
+    <p>플랫폼은 각자 명확한 역할을 가진 세 개의 계층으로 구성됩니다:</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>계층</th><th>기술</th><th>포트</th><th>역할</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>프론트엔드</td><td>Next.js 14 (React, TypeScript)</td><td>3000</td><td>관리 UI — 서버, 도구, 로그, 호출</td></tr>
+          <tr><td>API 게이트웨이</td><td>.NET 8 (C#, ASP.NET Core)</td><td>5000</td><td>REST API, DB 영속성, 상태 확인, JSON-RPC 프록시</td></tr>
+          <tr><td>MCP 서버</td><td>TypeScript (Node.js)</td><td>3001–3003</td><td>도구 실행 — GitHub, 데이터베이스, 파일 시스템</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>요청 흐름</h3>
+    <div class="flow">
+      <div class="flow-step">Next.js 프론트엔드</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">REST API</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">.NET 게이트웨이</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">JSON-RPC 2.0</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">MCP 서버</div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">외부 서비스</div>
+      <div class="flow-arrow">&#8592;</div>
+      <div class="flow-step">결과 반환</div>
+    </div>
+
+    <h3>기술 스택</h3>
+    <ul>
+      <li><strong>TypeScript MCP 서버</strong> — Node.js, Express, ts-node, Zod 스키마 유효성 검사</li>
+      <li><strong>C# / .NET 8</strong> — ASP.NET Core Web API, Entity Framework Core, SignalR</li>
+      <li><strong>Next.js 14</strong> — React 18, Tailwind CSS, SWR 데이터 페칭</li>
+      <li><strong>데이터베이스</strong> — SQLite (EF Core, 최초 실행 시 자동 생성)</li>
+      <li><strong>실시간</strong> — SignalR 라이브 상태 업데이트</li>
+      <li><strong>컨테이너</strong> — 5개 서비스 Docker Compose</li>
+    </ul>
+  </div>
+
+  <!-- ── MCP 서버 ── -->
+  <div class="card">
+    <h2>&#9881; MCP 서버 (총 13개 도구)</h2>
+    <p>세 가지 MCP 서버 모두 편의 REST 엔드포인트(<span class="inline-code">POST /tools/:name</span>)와 표준 JSON-RPC 2.0 엔드포인트(<span class="inline-code">POST /rpc</span>)를 통해 도구를 제공합니다. 각 서버는 <span class="inline-code">GET /health</span>와 <span class="inline-code">GET /info</span>도 제공합니다.</p>
+
+    <div class="server-grid">
+      <div class="server-card">
+        <div class="port">포트 3001</div>
+        <div class="name">GitHub MCP 서버</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_repos</span>
+          <span class="tool-tag">get_repo</span>
+          <span class="tool-tag">list_issues</span>
+          <span class="tool-tag">create_issue</span>
+          <span class="tool-tag">get_commits</span>
+        </div>
+      </div>
+      <div class="server-card">
+        <div class="port">포트 3002</div>
+        <div class="name">데이터베이스 MCP 서버</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_tables</span>
+          <span class="tool-tag">describe_table</span>
+          <span class="tool-tag">execute_query</span>
+          <span class="tool-tag">insert_record</span>
+        </div>
+      </div>
+      <div class="server-card">
+        <div class="port">포트 3003</div>
+        <div class="name">파일 시스템 MCP 서버</div>
+        <div class="tools-list">
+          <span class="tool-tag">list_files</span>
+          <span class="tool-tag">read_file</span>
+          <span class="tool-tag">write_file</span>
+          <span class="tool-tag">delete_file</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>JSON-RPC 2.0 프로토콜</h3>
+    <p>모든 도구 호출은 <span class="inline-code">HTTP POST /rpc</span>를 통해 JSON-RPC 2.0 사양을 따릅니다:</p>
+    <pre><code>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "list_repos",
+    "arguments": { "owner": "microsoft" }
+  }
+}</code></pre>
+  </div>
+
+  <!-- ── 데이터베이스 스키마 ── -->
+  <div class="card">
+    <h2>&#128451; 데이터베이스 스키마</h2>
+    <p>SQLite는 Entity Framework Core로 관리되는 영속성 계층으로 사용됩니다. 데이터베이스는 최초 실행 시 자동 생성되며 수동 마이그레이션 작업이 필요하지 않습니다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>테이블</th><th>목적</th><th>주요 컬럼</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="inline-code">McpServers</span></td><td>등록된 MCP 서버 인스턴스</td><td>Id, Name, BaseUrl, Status, LastHealthCheck</td></tr>
+          <tr><td><span class="inline-code">Tools</span></td><td>MCP 서버에서 동기화된 도구</td><td>Id, ServerId, Name, Description, InputSchema</td></tr>
+          <tr><td><span class="inline-code">ToolInvocations</span></td><td>모든 도구 호출의 감사 로그</td><td>Id, ToolId, Parameters, Result, Duration, Status, Timestamp</td></tr>
+          <tr><td><span class="inline-code">ConnectionLogs</span></td><td>서버 상태/연결 이벤트</td><td>Id, ServerId, EventType, Message, Timestamp</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 보안 ── -->
+  <div class="card">
+    <h2>&#128274; 보안 모델</h2>
+    <p>MCP DevBridge는 복잡한 인증 시스템 대신 환경 변수 기반 권한 게이팅을 사용하여 보안 모델을 투명하고 감사 가능하게 유지합니다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>제어</th><th>메커니즘</th><th>기본값</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>쓰기 작업 (파일 시스템)</td><td><span class="inline-code">ALLOW_WRITE</span> 환경 변수</td><td><span class="inline-code">false</span> — 기본적으로 안전</td></tr>
+          <tr><td>파일 시스템 경로 제한</td><td><span class="inline-code">SANDBOX_DIR</span> 환경 변수</td><td><span class="inline-code">./sandbox</span> mcp-servers 디렉토리 기준</td></tr>
+          <tr><td>GitHub API 접근</td><td><span class="inline-code">GITHUB_TOKEN</span> 환경 변수</td><td>필수 — 토큰 없으면 GitHub 호출 불가</td></tr>
+          <tr><td>데이터베이스 접근</td><td><span class="inline-code">DB_PATH</span>를 통한 SQLite 파일 경로</td><td><span class="inline-code">./data/dev.db</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="alert alert-warn">
+      <div class="alert-title">&#9888; 쓰기 접근 경고</div>
+      <p style="color:#fde68a; margin:0;">특별한 이유가 없는 한 프로덕션에서 <span class="inline-code">ALLOW_WRITE=true</span>를 설정하지 마십시오. 기본값 <span class="inline-code">false</span>는 AI 모델이 파일 시스템의 쓰기 또는 삭제 작업을 호출하려 해도 이를 차단합니다.</p>
+    </div>
+  </div>
+
+  <!-- ── Docker ── -->
+  <div class="card">
+    <h2>&#127758; Docker 아키텍처</h2>
+    <p>전체 플랫폼은 5개 서비스 Docker Compose 스택으로 제공됩니다. 모든 서비스는 내부 <span class="inline-code">mcp-network</span> 브릿지 네트워크에 있습니다. 프론트엔드(3000), 백엔드(5000), 세 개의 MCP 서버(3001-3003)만 호스트에 노출됩니다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>서비스</th><th>이미지 / 빌드</th><th>호스트 포트</th><th>의존성</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="inline-code">frontend</span></td><td>/frontend의 Dockerfile</td><td>3000</td><td>backend</td></tr>
+          <tr><td><span class="inline-code">backend</span></td><td>/backend의 Dockerfile</td><td>5000</td><td>mcp-github, mcp-database, mcp-filesystem</td></tr>
+          <tr><td><span class="inline-code">mcp-github</span></td><td>/mcp-servers의 Dockerfile</td><td>3001</td><td>—</td></tr>
+          <tr><td><span class="inline-code">mcp-database</span></td><td>/mcp-servers의 Dockerfile</td><td>3002</td><td>—</td></tr>
+          <tr><td><span class="inline-code">mcp-filesystem</span></td><td>/mcp-servers의 Dockerfile</td><td>3003</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>빠른 시작</h3>
+    <pre><code>cd project-1-mcp-devbridge
+docker compose up --build</code></pre>
+    <p>첫 번째 실행 시 모든 3개의 MCP 서버가 자동으로 데이터베이스에 시딩됩니다.</p>
+  </div>
+
+  <!-- ── 시작 순서 ── -->
+  <div class="card">
+    <h2>&#9654; 로컬 시작 순서</h2>
+    <p>Docker 없이 로컬에서 실행할 때는 의존성 순서에 따라 서비스를 시작해야 합니다:</p>
+
+    <ol>
+      <li>
+        <strong>1단계 — MCP 서버</strong> (세 개 병렬 실행)
+        <pre><code>cd mcp-servers &amp;&amp; npm install &amp;&amp; npm start</code></pre>
+        <p>포트 3001, 3002, 3003에서 세 개 서버 모두 시작합니다.</p>
+      </li>
+      <li>
+        <strong>2단계 — .NET API 게이트웨이</strong>
+        <pre><code>cd backend/McpGateway &amp;&amp; dotnet run</code></pre>
+        <p>포트 5000에서 시작합니다. 데이터베이스를 시딩하고 MCP 서버 상태 확인을 시작합니다.</p>
+      </li>
+      <li>
+        <strong>3단계 — Next.js 프론트엔드</strong>
+        <pre><code>cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</code></pre>
+        <p>포트 3000(또는 다음 가용 포트)에서 시작합니다. <span class="inline-code">NEXT_PUBLIC_API_URL</span>을 통해 백엔드에 연결합니다.</p>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       필수 설정
+       ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <h2>&#9881; 필수 설정</h2>
+    <p>MCP DevBridge를 실행하는 데 필요한 모든 환경 변수와 구성 값입니다. 해당 서비스를 시작하기 전에 설정해야 합니다.</p>
+
+    <!-- 개발 모드 -->
+    <div class="settings-card dev">
+      <h3>&#128187; 개발 모드 설정</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>설정</th><th>설정 위치</th><th>취득 방법 / 메모</th><th>필수 여부</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span> 또는 셸 환경</td>
+              <td>GitHub.com → 설정 → 개발자 설정 → 개인 액세스 토큰 → 토큰(클래식) → 새 토큰 생성. 범위 선택: <strong>repo</strong>, <strong>read:user</strong></td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>쓰기/삭제를 차단하려면 <code>false</code>로 설정(기본값). 로컬 개발 중 <code>write_file</code> 또는 <code>delete_file</code>이 필요할 때만 <code>true</code>로 설정하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>파일 시스템 서버는 모든 파일 작업을 이 경로로 제한합니다. 기본값: <code>./sandbox</code>(mcp-servers 디렉토리 기준). 디렉토리가 없으면 생성하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">DB_PATH</span></td>
+              <td><span class="inline-code">mcp-servers/.env</span></td>
+              <td>데이터베이스 MCP 서버용 SQLite 파일 경로. 기본값: <code>./data/dev.db</code>. 파일과 디렉토리는 최초 실행 시 EF Core에 의해 자동 생성됩니다.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td><span class="inline-code">frontend/.env.local</span></td>
+              <td>.NET 백엔드 API URL. 로컬 개발용: <code>http://localhost:5000</code>. Next.js 공개 환경 변수이므로 반드시 <code>NEXT_PUBLIC_</code> 접두사가 붙어야 합니다.</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>셸 환경 또는 <span class="inline-code">backend/launchSettings.json</span></td>
+              <td>Swagger UI, 상세 오류 페이지, 개발 모드 로깅을 활성화하려면 <code>Development</code>로 설정하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-title">&#9432; SQLite 자동 생성</div>
+        <p style="color:#bfdbfe; margin:0;">SQLite는 .NET 백엔드 최초 실행 시 Entity Framework Core에 의해 자동 생성됩니다. 개발 환경에서는 <code>dotnet ef database update</code>나 수동 SQL 스크립트가 필요하지 않습니다.</p>
+      </div>
+    </div>
+
+    <!-- 프로덕션 모드 -->
+    <div class="settings-card prod">
+      <h3>&#127758; 프로덕션 모드 설정 (무료 티어)</h3>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>설정</th><th>설정 위치</th><th>취득 방법 / 메모</th><th>필수 여부</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">GITHUB_TOKEN</span></td>
+              <td>호스팅 플랫폼 시크릿 / 환경 변수</td>
+              <td>개발과 동일한 무료 GitHub 개인 액세스 토큰. 만료 날짜를 설정하지 않으면 영구적으로 유효합니다. 호스팅 플랫폼에 시크릿으로 저장하십시오(Fly.io 시크릿, Railway 환경 변수 등).</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ASPNETCORE_ENVIRONMENT</span></td>
+              <td>호스팅 플랫폼 환경 변수</td>
+              <td><code>Production</code>으로 설정하십시오. Swagger UI를 비활성화하고 프로덕션 로깅을 활성화하며 사용자에게 상세 오류 메시지가 노출되지 않도록 합니다.</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">NEXT_PUBLIC_API_URL</span></td>
+              <td>Vercel / Netlify 환경 변수</td>
+              <td>배포된 백엔드 URL을 가리키도록 설정하십시오. 예: <code>https://your-backend.fly.dev</code>. Vercel 대시보드의 프로젝트 → 설정 → 환경 변수에서 설정하십시오.</td>
+              <td><span class="badge-req">필수</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">ALLOW_WRITE</span></td>
+              <td>호스팅 플랫폼 환경 변수</td>
+              <td>프로덕션에서는 <code>false</code>를 유지하도록 강력히 권장합니다. 사용 사례에서 원격 파일 쓰기가 명시적으로 필요한 경우에만 <code>true</code>로 설정하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">SANDBOX_DIR</span></td>
+              <td>호스팅 플랫폼 환경 변수 / Dockerfile</td>
+              <td>컨테이너 안전 경로로 설정하십시오: <code>/app/sandbox</code>. 이 디렉토리가 컨테이너 이미지 내에 존재하거나 엔트리포인트 스크립트에 의해 생성되어야 합니다.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+            <tr>
+              <td>데이터베이스 (PostgreSQL)</td>
+              <td>백엔드 환경의 연결 문자열</td>
+              <td>다중 인스턴스 프로덕션용: Supabase 무료 티어, Railway 무료 티어, 또는 Neon 무료 티어 모두 무료 PostgreSQL 연결 문자열을 제공합니다. <code>appsettings.Production.json</code>의 SQLite 연결을 교체하십시오.</td>
+              <td><span class="badge-opt">선택</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>무료 호스팅 옵션</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>컴포넌트</th><th>무료 플랫폼</th><th>메모</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Next.js 프론트엔드</td><td>Vercel Hobby 플랜</td><td>무료, Next.js에 최적화, GitHub에서 자동 CI/CD</td></tr>
+            <tr><td>Next.js 프론트엔드 (대안)</td><td>Netlify 무료 티어</td><td>월 100GB 대역폭 무료</td></tr>
+            <tr><td>백엔드 + MCP 컨테이너</td><td>Fly.io 무료 티어</td><td>공유 CPU VM 3개 무료; <code>fly launch</code>를 통한 Docker Compose 지원</td></tr>
+            <tr><td>백엔드 + MCP 컨테이너 (대안)</td><td>Railway 무료 티어</td><td>월 $5 크레딧; 간편한 Docker 배포</td></tr>
+            <tr><td>풀 스택 (VPS)</td><td>Oracle Cloud Always Free</td><td>AMD VM 2개 영구 무료; 전체 Docker Compose 스택 실행 가능</td></tr>
+            <tr><td>풀 스택 (VPS 대안)</td><td>DigitalOcean Droplet</td><td>512MB RAM 드롭릿 월 $4</td></tr>
+            <tr><td>PostgreSQL</td><td>Supabase / Neon / Railway</td><td>모두 연결 문자열이 포함된 무료 PostgreSQL 티어 제공</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">&#10003; 단일 서버 프로덕션에서의 SQLite</div>
+        <p style="color:#bbf7d0; margin:0;">SQLite는 단일 서버 프로덕션 배포에 완벽하게 작동합니다. 여러 백엔드 인스턴스가 필요하거나 SQLite가 처리할 수 있는 것 이상의 동시 쓰기 처리량이 필요한 경우에만 PostgreSQL로 업그레이드하십시오.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</div><!-- /lang-ko -->
+
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('.lang-content').forEach(function(el) { el.style.display = 'none'; });
+    document.querySelectorAll('.lang-btn').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('lang-' + lang).style.display = 'block';
+    document.getElementById('btn-' + lang).classList.add('active');
+  }
+</script>
+</body>
+</html>

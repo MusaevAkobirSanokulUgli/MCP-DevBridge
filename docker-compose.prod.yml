@@ -1,0 +1,192 @@
+# ============================================================
+# MCP DevBridge - Production Docker Compose
+# All services behind Nginx reverse proxy
+# ============================================================
+
+services:
+  # --- Nginx Reverse Proxy ---
+  nginx:
+    image: nginx:alpine
+    container_name: devbridge-nginx
+    ports:
+      - "${PUBLIC_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+    networks:
+      - devbridge
+
+  # --- Next.js Frontend ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ""
+    container_name: devbridge-frontend
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', r => process.exit(r.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+    networks:
+      - devbridge
+
+  # --- .NET Backend API ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: McpDevBridge.Api/Dockerfile
+    container_name: devbridge-backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Data Source=/data/devbridge.db
+      - McpServers__GitHubServer=http://github-server:3001
+      - McpServers__DatabaseServer=http://database-server:3002
+      - McpServers__FileSystemServer=http://filesystem-server:3003
+      - Cors__AllowedOrigins__0=http://localhost
+      - Cors__AllowedOrigins__1=http://localhost:${PUBLIC_PORT:-80}
+    volumes:
+      - db-data:/data
+    depends_on:
+      github-server:
+        condition: service_healthy
+      database-server:
+        condition: service_healthy
+      filesystem-server:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+    networks:
+      - devbridge
+
+  # --- GitHub MCP Server ---
+  github-server:
+    build:
+      context: ./mcp-servers
+      dockerfile: Dockerfile
+      args:
+        SERVER_NAME: github-server
+    container_name: devbridge-github-server
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    networks:
+      - devbridge
+
+  # --- Database MCP Server ---
+  database-server:
+    build:
+      context: ./mcp-servers
+      dockerfile: Dockerfile
+      args:
+        SERVER_NAME: database-server
+    container_name: devbridge-database-server
+    environment:
+      - PORT=3002
+      - NODE_ENV=production
+      - DB_PATH=/data/sample.db
+    volumes:
+      - db-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    networks:
+      - devbridge
+
+  # --- FileSystem MCP Server ---
+  filesystem-server:
+    build:
+      context: ./mcp-servers
+      dockerfile: Dockerfile
+      args:
+        SERVER_NAME: filesystem-server
+    container_name: devbridge-filesystem-server
+    environment:
+      - PORT=3003
+      - NODE_ENV=production
+      - SANDBOX_DIR=/sandbox
+    volumes:
+      - sandbox-data:/sandbox
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    networks:
+      - devbridge
+
+volumes:
+  db-data:
+    driver: local
+  sandbox-data:
+    driver: local
+
+networks:
+  devbridge:
+    driver: bridge

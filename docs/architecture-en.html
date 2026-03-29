@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP DevBridge - Architecture Documentation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+        a { color: #3b82f6; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1e1b4b 40%, #0f172a 100%);
+            padding: 80px 40px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.18) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(59,130,246,0.15);
+            border: 1px solid rgba(59,130,246,0.4);
+            color: #93c5fd;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            animation: shimmer 4s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+        .hero-tagline {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            max-width: 700px;
+            margin: 0 auto 32px;
+        }
+        .lang-badge {
+            display: inline-block;
+            background: #3b82f6;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 32px;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px 24px;
+            min-width: 110px;
+        }
+        .stat-num { font-size: 1.6rem; font-weight: 800; color: #60a5fa; }
+        .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Layout */
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+        .section { padding: 56px 0; }
+        .section-title {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(59,130,246,0.5), transparent);
+            border-radius: 2px;
+            margin-left: 12px;
+        }
+        .section-subtitle { color: #64748b; margin-bottom: 32px; font-size: 0.97rem; }
+
+        /* Cards */
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 28px;
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 24px rgba(59,130,246,0.12);
+            transform: translateY(-2px);
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2rem; }
+            .stats-row { gap: 16px; }
+        }
+
+        /* Architecture */
+        .arch-diagram {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 40px 24px;
+            margin: 24px 0;
+        }
+        .arch-layer {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+        .arch-box {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 14px 22px;
+            text-align: center;
+            min-width: 160px;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .arch-box:hover { border-color: var(--accent, #3b82f6); box-shadow: 0 0 16px rgba(59,130,246,0.2); }
+        .arch-box.blue { --accent: #3b82f6; border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+        .arch-box.purple { --accent: #8b5cf6; border-color: #8b5cf6; background: rgba(139,92,246,0.08); }
+        .arch-box.green { --accent: #10b981; border-color: #10b981; background: rgba(16,185,129,0.08); }
+        .arch-box.orange { --accent: #f59e0b; border-color: #f59e0b; background: rgba(245,158,11,0.08); }
+        .arch-box-title { font-weight: 700; font-size: 0.9rem; color: #f1f5f9; }
+        .arch-box-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 3px; }
+        .arch-arrow {
+            text-align: center;
+            color: #475569;
+            font-size: 1.4rem;
+            margin: 4px 0;
+        }
+        .arch-label {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        thead th {
+            background: #1e293b;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid #334155;
+        }
+        tbody td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #1e293b;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            vertical-align: top;
+        }
+        tbody tr:hover { background: rgba(59,130,246,0.05); }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+        .badge-orange { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+        /* Code block */
+        .code-block {
+            background: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 20px 24px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            overflow-x: auto;
+            margin: 12px 0;
+            line-height: 1.7;
+        }
+        .code-block .comment { color: #475569; }
+        .code-block .cmd { color: #34d399; }
+        .code-block .str { color: #fbbf24; }
+        .code-block .kw { color: #60a5fa; }
+
+        /* Features */
+        .feature-item {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            padding: 18px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .feature-item:last-child { border-bottom: none; }
+        .feature-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+        .feature-title { font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+        .feature-desc { font-size: 0.9rem; color: #94a3b8; }
+
+        /* Problem */
+        .problem-list { list-style: none; margin-top: 16px; }
+        .problem-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #1e293b;
+            color: #94a3b8;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+        .problem-list li::before { content: '⚠'; font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+        /* Security */
+        .security-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 600px) { .security-grid { grid-template-columns: 1fr; } }
+        .security-card {
+            background: rgba(16,185,129,0.06);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 12px;
+            padding: 16px 18px;
+        }
+        .security-card h4 { color: #34d399; font-size: 0.9rem; margin-bottom: 6px; }
+        .security-card p { color: #94a3b8; font-size: 0.85rem; }
+
+        /* Footer */
+        footer {
+            background: #020617;
+            border-top: 1px solid #1e293b;
+            padding: 32px 40px;
+            text-align: center;
+            color: #475569;
+            font-size: 0.85rem;
+        }
+        footer span { color: #3b82f6; }
+
+        /* Divider */
+        hr { border: none; border-top: 1px solid #1e293b; margin: 0; }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-badge">Project 1 &nbsp;·&nbsp; Developer Tools</div>
+    <h1>MCP DevBridge</h1>
+    <p class="hero-tagline">Universal Developer Tool Integration Platform implementing Model Context Protocol (MCP) with JSON-RPC 2.0 — connecting AI assistants to GitHub, databases, and file systems.</p>
+    <div><span class="lang-badge">🇬🇧 English</span></div>
+    <div class="stats-row">
+        <div class="stat-item"><div class="stat-num">55</div><div class="stat-label">Files</div></div>
+        <div class="stat-item"><div class="stat-num">8,079</div><div class="stat-label">Lines of Code</div></div>
+        <div class="stat-item"><div class="stat-num">13</div><div class="stat-label">MCP Tools</div></div>
+        <div class="stat-item"><div class="stat-num">15</div><div class="stat-label">API Endpoints</div></div>
+        <div class="stat-item"><div class="stat-num">5</div><div class="stat-label">Docker Services</div></div>
+    </div>
+</section>
+
+<hr>
+
+<div class="container">
+
+    <!-- PROBLEM -->
+    <section class="section">
+        <h2 class="section-title">🎯 Problem Statement</h2>
+        <p class="section-subtitle">The challenges MCP DevBridge was built to solve</p>
+        <div class="card">
+            <p style="color:#94a3b8; margin-bottom:16px;">Modern AI development workflows suffer from fragmentation: each tool (GitHub, databases, file systems) has its own proprietary API, authentication mechanism, and data format. Developers waste time writing glue code instead of building features.</p>
+            <ul class="problem-list">
+                <li>No unified protocol for AI tools to interact with developer resources — every integration requires bespoke code.</li>
+                <li>Lack of real-time observability: developers cannot monitor tool calls, latency, or errors across multiple integrations in one place.</li>
+                <li>Security gaps when AI assistants access sensitive repositories or databases without centralized audit logging.</li>
+                <li>Difficult local development: spinning up individual mock servers for GitHub, databases, and file systems is time-consuming and error-prone.</li>
+                <li>No standardized way to expose new tools to AI models — each model vendor has a different function-calling format.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🏗 Architecture</h2>
+        <p class="section-subtitle">Four-layer architecture built on Model Context Protocol and JSON-RPC 2.0</p>
+        <div class="arch-diagram">
+            <div class="arch-label">Client Layer</div>
+            <div class="arch-layer">
+                <div class="arch-box blue">
+                    <div class="arch-box-title">Next.js 14 Dashboard</div>
+                    <div class="arch-box-sub">Port 3000 · React UI</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ HTTP / WebSocket (SignalR)</div>
+            <div class="arch-label">Gateway Layer</div>
+            <div class="arch-layer">
+                <div class="arch-box purple">
+                    <div class="arch-box-title">.NET 8 API Gateway</div>
+                    <div class="arch-box-sub">Port 5000 · Routing &amp; Audit</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ JSON-RPC 2.0 over HTTP</div>
+            <div class="arch-label">MCP Server Layer</div>
+            <div class="arch-layer">
+                <div class="arch-box green">
+                    <div class="arch-box-title">GitHub MCP Server</div>
+                    <div class="arch-box-sub">Port 3001 · 5 tools</div>
+                </div>
+                <div class="arch-box green">
+                    <div class="arch-box-title">Database MCP Server</div>
+                    <div class="arch-box-sub">Port 3002 · 4 tools</div>
+                </div>
+                <div class="arch-box green">
+                    <div class="arch-box-title">FileSystem MCP Server</div>
+                    <div class="arch-box-sub">Port 3003 · 4 tools</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ Data Persistence</div>
+            <div class="arch-label">Persistence Layer</div>
+            <div class="arch-layer">
+                <div class="arch-box orange">
+                    <div class="arch-box-title">SQLite (EF Core)</div>
+                    <div class="arch-box-sub">Audit logs &amp; config</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TECH STACK -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🛠 Technology Stack</h2>
+        <p class="section-subtitle">Production-grade technologies across the full stack</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Technology</th>
+                        <th>Version</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="badge badge-blue">Frontend</span></td><td>Next.js</td><td>14</td><td>Dashboard UI with App Router</td></tr>
+                    <tr><td><span class="badge badge-blue">Frontend</span></td><td>TypeScript</td><td>5.x</td><td>Type-safe client code</td></tr>
+                    <tr><td><span class="badge badge-blue">Frontend</span></td><td>Tailwind CSS</td><td>3.x</td><td>Utility-first styling</td></tr>
+                    <tr><td><span class="badge badge-purple">Backend</span></td><td>.NET</td><td>8.0</td><td>API Gateway &amp; business logic</td></tr>
+                    <tr><td><span class="badge badge-purple">Backend</span></td><td>Entity Framework Core</td><td>8.x</td><td>ORM for SQLite persistence</td></tr>
+                    <tr><td><span class="badge badge-purple">Backend</span></td><td>SignalR</td><td>8.x</td><td>Real-time WebSocket hub</td></tr>
+                    <tr><td><span class="badge badge-green">MCP</span></td><td>JSON-RPC 2.0</td><td>2.0</td><td>Protocol for tool invocations</td></tr>
+                    <tr><td><span class="badge badge-green">MCP</span></td><td>Model Context Protocol</td><td>1.x</td><td>Standardized tool definitions</td></tr>
+                    <tr><td><span class="badge badge-orange">Infra</span></td><td>Docker &amp; Compose</td><td>24+</td><td>Containerized 5-service setup</td></tr>
+                    <tr><td><span class="badge badge-orange">Infra</span></td><td>SQLite</td><td>3.x</td><td>Embedded audit &amp; config store</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">✨ Key Features</h2>
+        <p class="section-subtitle">Everything you need to integrate AI tools with your developer environment</p>
+        <div class="grid-2">
+            <div class="card">
+                <div class="feature-item">
+                    <span class="feature-icon">📡</span>
+                    <div><div class="feature-title">Real-time Dashboard</div><div class="feature-desc">Live tool-call monitoring via SignalR WebSockets. See invocations, latency, and errors across all three MCP servers in a single unified view.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🐙</span>
+                    <div><div class="feature-title">GitHub MCP Server</div><div class="feature-desc">Tools: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_repos</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">get_repo</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">create_issue</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_issues</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">get_pull_requests</code>.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🗄</span>
+                    <div><div class="feature-title">Database MCP Server</div><div class="feature-desc">Tools: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_tables</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">describe_schema</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">query_table</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">execute_query</code>. Safe read/write separation.</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="feature-item">
+                    <span class="feature-icon">📁</span>
+                    <div><div class="feature-title">FileSystem MCP Server</div><div class="feature-desc">Tools: <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">list_files</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">read_file</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">write_file</code>, <code style="color:#60a5fa;background:#0f172a;padding:1px 6px;border-radius:4px;">search_files</code>. Sandboxed directory access.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📋</span>
+                    <div><div class="feature-title">API Gateway &amp; Audit Logging</div><div class="feature-desc">Every tool call is logged with timestamp, method, parameters, response time, and status. Full audit trail persisted to SQLite via EF Core.</div></div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💓</span>
+                    <div><div class="feature-title">Background Health Checks</div><div class="feature-desc">Hosted service pings all three MCP servers every 30 seconds. Status changes broadcast via SignalR to connected dashboard clients.</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API ENDPOINTS -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🔌 API Endpoints</h2>
+        <p class="section-subtitle">15 REST endpoints exposed by the .NET 8 API Gateway</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Server</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/mcp/servers</td><td>List all registered MCP servers and their status</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/mcp/tools</td><td>Aggregate all tools from all servers</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/mcp/call</td><td>Execute a tool call (JSON-RPC proxied)</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/audit/logs</td><td>Paginated audit log with filters</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/audit/stats</td><td>Aggregated call statistics</td><td>Gateway</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/github/repos</td><td>List repositories (via GitHub MCP)</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/github/issues</td><td>Create a new GitHub issue</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/github/pulls/:repo</td><td>List pull requests for a repository</td><td>GitHub</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/db/tables</td><td>List all database tables</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/db/schema/:table</td><td>Describe table schema</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/db/query</td><td>Execute a read query</td><td>Database</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/fs/list</td><td>List directory contents</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-green">GET</span></td><td>/api/fs/read</td><td>Read file contents</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/fs/write</td><td>Write or update a file</td><td>FileSystem</td></tr>
+                    <tr><td><span class="badge badge-blue">POST</span></td><td>/api/fs/search</td><td>Full-text search across files</td><td>FileSystem</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- QUICK START -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🚀 Quick Start</h2>
+        <p class="section-subtitle">Get MCP DevBridge running locally in under 5 minutes</p>
+        <div class="card">
+            <p style="color:#94a3b8; margin-bottom:12px;"><strong style="color:#f1f5f9;">Step 1:</strong> Clone the repository</p>
+            <div class="code-block">
+<span class="cmd">git clone</span> https://github.com/your-org/mcp-devbridge.git
+<span class="cmd">cd</span> mcp-devbridge
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">Step 2:</strong> Configure environment variables</p>
+            <div class="code-block">
+<span class="cmd">cp</span> .env.example .env
+<span class="comment"># Edit .env and set your GitHub token:</span>
+<span class="str">GITHUB_TOKEN</span>=ghp_your_personal_access_token
+<span class="str">DB_CONNECTION</span>=Data Source=devbridge.db
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">Step 3:</strong> Start all services with Docker Compose</p>
+            <div class="code-block">
+<span class="cmd">docker compose up</span> --build -d
+<span class="comment"># Services starting:</span>
+<span class="comment">#  ✓ dashboard        → http://localhost:3000</span>
+<span class="comment">#  ✓ api-gateway      → http://localhost:5000</span>
+<span class="comment">#  ✓ mcp-github       → http://localhost:3001</span>
+<span class="comment">#  ✓ mcp-database     → http://localhost:3002</span>
+<span class="comment">#  ✓ mcp-filesystem   → http://localhost:3003</span>
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">Step 4:</strong> Test a tool call</p>
+            <div class="code-block">
+<span class="cmd">curl</span> -X POST http://localhost:5000/api/mcp/call \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"server":"github","tool":"list_repos","params":{}}'</span>
+            </div>
+            <p style="color:#94a3b8; margin: 16px 0 12px;"><strong style="color:#f1f5f9;">Step 5:</strong> Open the dashboard at <a href="http://localhost:3000">http://localhost:3000</a></p>
+        </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="section" style="padding-top:0">
+        <h2 class="section-title">🔒 Security Considerations</h2>
+        <p class="section-subtitle">Built-in safeguards for production deployments</p>
+        <div class="security-grid">
+            <div class="security-card">
+                <h4>🔑 Token Management</h4>
+                <p>GitHub tokens stored only in environment variables, never in source code or database. Tokens are never returned in API responses.</p>
+            </div>
+            <div class="security-card">
+                <h4>📋 Audit Logging</h4>
+                <p>Every tool call is persisted with caller identity, parameters, response time, and HTTP status. Logs are immutable once written.</p>
+            </div>
+            <div class="security-card">
+                <h4>🗂 FileSystem Sandboxing</h4>
+                <p>The FileSystem MCP server operates within a configurable root directory. Path traversal attempts (../) are blocked at the validation layer.</p>
+            </div>
+            <div class="security-card">
+                <h4>🛡 Query Safety</h4>
+                <p>Database tool separates read queries from write queries. DDL statements (DROP, CREATE) are blocked by default in the query_table tool.</p>
+            </div>
+            <div class="security-card">
+                <h4>🏥 Health Monitoring</h4>
+                <p>Background health checks detect server failures within 30 seconds. Unhealthy servers are excluded from routing until they recover.</p>
+            </div>
+            <div class="security-card">
+                <h4>🐳 Network Isolation</h4>
+                <p>Docker Compose places all services on an internal network. Only the dashboard (3000) and gateway (5000) are exposed to the host.</p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<footer>
+    <p>MCP DevBridge &nbsp;·&nbsp; AI/ML Portfolio &nbsp;·&nbsp; Built with <span>.NET 8</span>, <span>Next.js 14</span>, <span>Model Context Protocol</span></p>
+    <p style="margin-top:8px; color:#334155;">Documentation generated for portfolio demonstration purposes.</p>
+</footer>
+
+</body>
+</html>

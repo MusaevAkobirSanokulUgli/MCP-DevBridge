@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:5000
+    depends_on:
+      - backend
+    networks:
+      - devbridge
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: McpDevBridge.Api/Dockerfile
+    ports:
+      - "5200:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Data Source=/data/devbridge.db
+      - McpServers__GitHubServer=http://github-server:3001
+      - McpServers__DatabaseServer=http://database-server:3002
+      - McpServers__FileSystemServer=http://filesystem-server:3003
+    volumes:
+      - db-data:/data
+    depends_on:
+      - github-server
+      - database-server
+      - filesystem-server
+    networks:
+      - devbridge
+
+  github-server:
+    build:
+      context: ./mcp-servers
+      dockerfile: Dockerfile
+      args:
+        SERVER_NAME: github-server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    networks:
+      - devbridge
+
+  database-server:
+    build:
+      context: ./mcp-servers
+      dockerfile: Dockerfile
+      args:
+        SERVER_NAME: database-server
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - DB_PATH=/data/sample.db
+    volumes:
+      - db-data:/data
+    networks:
+      - devbridge
+
+  filesystem-server:
+    build:
+      context: ./mcp-servers
+      dockerfile: Dockerfile
+      args:
+        SERVER_NAME: filesystem-server
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - SANDBOX_DIR=/sandbox
+    volumes:
+      - sandbox-data:/sandbox
+    networks:
+      - devbridge
+
+volumes:
+  db-data:
+  sandbox-data:
+
+networks:
+  devbridge:
+    driver: bridge
